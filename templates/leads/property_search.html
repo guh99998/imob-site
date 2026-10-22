@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Procuro um imóvel — {{ site.name }}{% endblock %}
+{% block meta_description %}Conte o que você procura e a {{ site.name }} encontra imóveis com o seu perfil.{% endblock %}
+{% block content %}
+<div class="grid gap-10 lg:grid-cols-[minmax(0,36rem)_1fr] lg:items-start">
+  <div>
+    <p class="text-sm font-semibold text-accent uppercase tracking-wide">Busca personalizada</p>
+    <h1 class="font-display text-3xl md:text-5xl mt-2">Procuro um imóvel</h1>
+    <p class="mt-4 mb-8 text-muted">Não achou o que queria? Conte o que você procura: um corretor busca no nosso estoque e na rede de parceiros e chama você no WhatsApp.</p>
+    {% include "leads/partials/search_box.html" %}
+  </div>
+
+  <aside class="space-y-6" aria-label="Como funciona">
+    <div class="relative overflow-hidden rounded-lg aspect-[16/10] bg-line">
+      <img src="{% static 'img/hero-poster.jpg' %}" alt="" width="1200" height="750" loading="lazy" decoding="async" class="w-full h-full object-cover">
+      <div class="absolute inset-0 bg-gradient-to-t from-fg/80 to-transparent"></div>
+      <p class="absolute bottom-4 left-4 right-4 text-white font-display text-xl md:text-2xl">
+        {{ available_count }} imóve{{ available_count|pluralize:"l,is" }} disponíve{{ available_count|pluralize:"l,is" }} agora — e outros que ainda nem foram anunciados.
+      </p>
+    </div>
+
+    <div class="bg-surface border border-line rounded-lg p-6">
+      <h2 class="font-display text-xl">Como funciona</h2>
+      <ol class="mt-4 space-y-4">
+        <li class="flex gap-3"><span class="step">1</span><div><p class="font-semibold">Você conta o que procura</p><p class="text-sm text-muted">Tipo, cidade e até quanto quer pagar. Leva 1 minuto.</p></div></li>
+        <li class="flex gap-3"><span class="step">2</span><div><p class="font-semibold">A gente garimpa</p><p class="text-sm text-muted">Cruzamos com nosso estoque, imóveis de parceiros e lançamentos antes de irem ao site.</p></div></li>
+        <li class="flex gap-3"><span class="step">3</span><div><p class="font-semibold">Você recebe as opções</p><p class="text-sm text-muted">Um corretor chama no WhatsApp com fotos e agenda a visita.</p></div></li>
+      </ol>
+    </div>
+
+    <div class="bg-accent-soft border border-line rounded-lg p-6">
+      <h2 class="font-display text-xl">Prefere conversar agora?</h2>
+      <p class="mt-2 text-sm text-muted">Atendimento de segunda a sábado. Sem compromisso.</p>
+      <div class="mt-4">{% include "core/partials/contact_links.html" with message="Olá, estou procurando um imóvel." %}</div>
+      {% if site.creci %}<p class="mt-4 text-xs text-muted">{{ site.name }} · CRECI {{ site.creci }}</p>{% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

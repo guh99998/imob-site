@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block title %}{{ site.name }} — Imóveis para venda e aluguel{% endblock %}
+
+{% block main %}
+{# HERO #}
+<section class="hero relative isolate overflow-hidden bg-fg text-surface min-h-[34rem] lg:min-h-[40rem] flex items-end"
+         style="background-image:url('{% static 'img/hero-poster.jpg' %}');background-size:cover;background-position:center">
+  <video class="hero-video absolute inset-0 -z-20 w-full h-full object-cover" autoplay muted loop playsinline
+         poster="{% static 'img/hero-poster.jpg' %}" aria-hidden="true" tabindex="-1" preload="metadata">
+    <source src="{% static 'video/hero.mp4' %}" type="video/mp4">
+  </video>
+  <div class="absolute inset-0 -z-10 bg-gradient-to-t from-fg/90 via-fg/40 to-fg/10"></div>
+
+  <div class="max-w-7xl w-full mx-auto px-5 md:px-8 pb-8 pt-24">
+    <h1 class="reveal font-display text-4xl sm:text-6xl lg:text-7xl max-w-3xl">Casa grande,<br>bairro tranquilo.</h1>
+    <p class="mt-4 max-w-lg text-surface/90 text-lg">Imóveis para comprar e alugar, com fotos de verdade e preço na tela.</p>
+
+    <form action="{% url 'properties:list' %}" method="get" class="mt-8 bg-surface text-fg p-4 rounded-lg shadow-lg max-w-5xl space-y-3">
+      <fieldset class="inline-flex border border-line rounded-md overflow-hidden text-sm font-semibold">
+        <legend class="sr-only">Finalidade</legend>
+        <label><input type="radio" name="purpose" value="SALE" checked class="peer sr-only"><span class="block px-5 py-2 cursor-pointer peer-checked:bg-accent peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-accent">Comprar</span></label>
+        <label><input type="radio" name="purpose" value="RENT" class="peer sr-only"><span class="block px-5 py-2 cursor-pointer peer-checked:bg-accent peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-accent">Alugar</span></label>
+      </fieldset>
+      <div class="grid gap-3 grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_7rem] lg:items-end">
+        <div><label for="h-cat" class="field-label">Tipo de imóvel</label>
+          <select id="h-cat" name="category" class="field"><option value="">Todos</option>{% for label, items in category_groups %}<optgroup label="{{ label }}">{% for c in items %}<option value="{{ c.slug }}">{{ c.name }}</option>{% endfor %}</optgroup>{% endfor %}</select></div>
+        <div><label for="h-city" class="field-label">Cidade</label>
+          <select id="h-city" name="city" class="field"><option value="">Todas</option>{% for c in city_choices %}<option value="{{ c.pk }}">{{ c.name }}/{{ c.state }}</option>{% endfor %}</select></div>
+        <div><label for="h-nb" class="field-label">Bairro</label>
+          <select id="h-nb" name="neighborhood" class="field"><option value="">Todos</option>{% for c in neighborhood_groups %}<optgroup label="{{ c.name }}/{{ c.state }}">{% for n in c.neighborhoods.all %}<option value="{{ n.pk }}">{{ n.name }}</option>{% endfor %}</optgroup>{% endfor %}</select></div>
+        <div><label for="h-bed" class="field-label">Quartos</label>
+          <select id="h-bed" name="bedrooms" class="field"><option value="">Todos</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+</option></select></div>
+      </div>
+      <div class="grid gap-3 grid-cols-2 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+        <div><label for="h-min" class="field-label">Preço mínimo</label>
+          <input id="h-min" name="min_price" class="field" inputmode="numeric" placeholder="R$ 0" data-mask="money"></div>
+        <div><label for="h-max" class="field-label">Preço máximo</label>
+          <input id="h-max" name="max_price" class="field" inputmode="numeric" placeholder="Sem limite" data-mask="money"></div>
+        <button class="btn col-span-2 lg:col-span-1">Buscar imóveis</button>
+      </div>
+    </form>
+    <form action="{% url 'properties:list' %}" method="get" class="mt-3 flex flex-wrap items-center gap-2 text-sm max-w-5xl" role="search" aria-label="Buscar por código">
+      <label for="h-code" class="text-surface/90">Já sabe o código do imóvel?</label>
+      <input id="h-code" name="code" class="field !w-32 !py-1.5 uppercase" placeholder="Ex.: CA001" maxlength="20" autocomplete="off">
+      <button class="btn !py-1.5 !px-4">Ir</button>
+    </form>
+  </div>
+</section>
+
+<div class="max-w-7xl mx-auto px-5 md:px-8">
+  {# DESTAQUES: até 3 cards do mesmo tamanho #}
+  {% if highlights %}
+  <section class="py-16" aria-labelledby="destaques">
+    <h2 id="destaques" class="font-display text-3xl md:text-4xl max-w-xl">Imóveis em destaque,<br>escolhidos a dedo.</h2>
+    <div class="mt-10 grid gap-8 sm:grid-cols-2 xl:grid-cols-3 items-stretch">
+      {% for p in highlights %}{% include "partials/property_card.html" %}{% endfor %}
+    </div>
+    <p class="mt-10"><a class="btn btn-dark" href="{% url 'properties:list' %}">Ver todos os imóveis</a></p>
+  </section>
+  {% endif %}
+
+  {# CATEGORIAS: faixa de fotos verticais #}
+  {% if categories %}
+  <section class="pb-16" aria-labelledby="categorias">
+    <h2 id="categorias" class="font-display text-3xl md:text-4xl">Navegue por categoria</h2>
+    <ul class="mt-8 grid grid-flow-col auto-cols-[62%] sm:auto-cols-[32%] lg:auto-cols-fr gap-4 overflow-x-auto pb-2 snap-x">
+      {% for c in categories %}
+      <li class="snap-start">
+        <a href="{% url 'core:landing' 'comprar' c.slug %}" class="group relative block aspect-[3/5] bg-fg overflow-hidden text-surface rounded-lg">
+          {% with cover=c.sample.cover %}{% if cover %}<img src="{{ cover.src_sm }}" alt="{{ c.name }}" width="640" height="480" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105">{% endif %}{% endwith %}
+          <span class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-fg to-transparent pt-16">
+            <span class="block font-display text-2xl">{{ c.name }}</span>
+            <span class="text-sm">{{ c.total }} imóve{{ c.total|pluralize:"l,is" }}</span>
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {# LOCALIZAÇÃO #}
+  {% if cities or neighborhoods %}
+  <section class="pb-16" aria-labelledby="onde">
+    <h2 id="onde" class="font-display text-3xl md:text-4xl">Onde estamos</h2>
+    <div class="mt-8 grid gap-10 md:grid-cols-2">
+      <ul class="divide-y divide-line border-y border-line">
+        {% for c in cities %}
+        <li><a class="flex justify-between py-4 hover:text-accent" href="{% url 'properties:list' %}?city={{ c.pk }}"><span class="font-display text-2xl">{{ c.name }}/{{ c.state }}</span><span class="tabular-nums">{{ c.total }} imóve{{ c.total|pluralize:"l,is" }}</span></a></li>
+        {% endfor %}
+      </ul>
+      <ul class="flex flex-wrap content-start gap-2">
+        {% for n in neighborhoods %}
+        <li><a class="inline-block border border-line bg-surface rounded-full px-3 py-1.5 text-sm hover:border-accent hover:text-accent" href="{% url 'properties:list' %}?neighborhood={{ n.pk }}">{{ n.name }} <span class="tabular-nums opacity-70">{{ n.total }}</span></a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+{# ANUNCIE: faixa clara com formulário, separada do rodapé escuro #}
+<section class="bg-accent-soft border-t border-line" aria-labelledby="anuncie">
+  <div class="max-w-7xl mx-auto px-5 md:px-8 py-16 grid gap-10 lg:grid-cols-2 lg:items-start">
+    <div>
+      <h2 id="anuncie" class="font-display text-3xl md:text-4xl">Quer vender ou<br>alugar seu imóvel?</h2>
+      <p class="mt-4 text-muted max-w-md">Conte o que você tem: tipo, bairro e valor desejado. A gente avalia, fotografa e cuida do anúncio até a chave mudar de mãos.</p>
+    </div>
+    <div class="bg-surface border border-line rounded-lg p-6">
+      {% include "leads/partials/contact_box.html" with form=listing_form action=listing_action %}
+    </div>
+  </div>
+</section>
+
+<script src="{% static 'core/admin/masks.js' %}" defer></script>
+{% endblock %}

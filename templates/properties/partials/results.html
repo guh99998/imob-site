@@ -1,0 +1,38 @@
+{% if code_not_found %}<p class="mb-4 border border-line bg-accent-soft rounded-md px-4 py-3" role="status">Não encontramos um imóvel disponível com o código <strong>{{ code_not_found|upper }}</strong>. Veja os outros imóveis abaixo.</p>{% endif %}
+<div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6">
+  <p class="font-semibold">{{ page.paginator.count }} imóve{{ page.paginator.count|pluralize:"l,is" }}</p>
+  {% for chip in chips %}
+    <a href="{{ chip.url }}" hx-get="{{ chip.url }}" hx-target="#results" hx-push-url="true"
+       class="inline-flex items-center gap-2 border border-line bg-surface rounded-full px-3 py-1 text-sm hover:border-accent hover:text-accent"
+       aria-label="Remover filtro {{ chip.label }}">{{ chip.label }} <span aria-hidden="true">&times;</span></a>
+  {% endfor %}
+</div>
+{% if page.object_list %}
+<div class="grid gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
+  {% for p in page %}{% include "partials/property_card.html" %}{% endfor %}
+</div>
+{% else %}
+  <p class="border border-line bg-surface p-6">Nenhum imóvel encontrado com esses filtros. <a class="underline" href="{% url 'properties:list' %}">Veja todos os imóveis</a> ou tire um filtro acima.</p>
+{% endif %}
+{% if page.has_other_pages %}
+<nav class="flex flex-wrap items-center justify-center gap-1.5 mt-12 border-t border-line pt-6" aria-label="Paginação">
+  {% if page.has_previous %}
+    <a class="pager" rel="prev" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.previous_page_number }}"
+       hx-get="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.previous_page_number }}" hx-target="#results" hx-push-url="true"
+       aria-label="Página anterior">&lsaquo;<span class="hidden sm:inline">&nbsp;Anterior</span></a>
+  {% endif %}
+  {% for n in page_range %}
+    {% if n == page.paginator.ELLIPSIS %}<span class="px-1 text-muted" aria-hidden="true">…</span>
+    {% elif n == page.number %}<span class="pager is-current" aria-current="page">{{ n }}</span>
+    {% else %}<a class="pager" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ n }}"
+       hx-get="?{% if querystring %}{{ querystring }}&{% endif %}page={{ n }}" hx-target="#results" hx-push-url="true"
+       aria-label="Página {{ n }}">{{ n }}</a>{% endif %}
+  {% endfor %}
+  {% if page.has_next %}
+    <a class="pager" rel="next" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.next_page_number }}"
+       hx-get="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.next_page_number }}" hx-target="#results" hx-push-url="true"
+       aria-label="Próxima página"><span class="hidden sm:inline">Próxima&nbsp;</span>&rsaquo;</a>
+  {% endif %}
+</nav>
+<p class="mt-2 text-center text-sm text-muted tabular-nums">Página {{ page.number }} de {{ page.paginator.num_pages }}</p>
+{% endif %}

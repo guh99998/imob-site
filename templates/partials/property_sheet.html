@@ -1,0 +1,16 @@
+{# A "ficha" do imóvel: metragem em destaque + cotas. Uso: include com p=imóvel [e size="lg"] #}
+<dl class="ficha{% if size == 'lg' %} ficha-lg{% endif %}">
+  <div class="ficha-area">
+    {% if p.area_total or p.area_built %}
+      <dt class="sr-only">Área</dt>
+      <dd class="flex items-baseline gap-1"><strong>{{ p.area_total|default:p.area_built|floatformat:"-2" }}</strong><span>m²</span></dd>
+    {% else %}
+      <dt class="sr-only">Área</dt><dd><strong>—</strong></dd>
+    {% endif %}
+  </div>
+  <div class="ficha-cotas">
+    <div><dt><small>{% if size == "lg" %}quarto{{ p.bedrooms|pluralize }}{% else %}qto{{ p.bedrooms|pluralize }}{% endif %}</small></dt><dd><b>{{ p.bedrooms }}</b></dd></div>
+    <div><dt><small>{% if size == "lg" %}banheiro{{ p.bathrooms|pluralize }}{% else %}banh.{% endif %}</small></dt><dd><b>{{ p.bathrooms }}</b></dd></div>
+    <div><dt><small>vaga{{ p.parking_spaces|pluralize }}</small></dt><dd><b>{{ p.parking_spaces }}</b></dd></div>
+  </div>
+</dl>

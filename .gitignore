@@ -172,3 +172,12 @@ cython_debug/
 #.idea/
 
 # End of https://www.toptal.com/developers/gitignore/api/django
+.django_tailwind_cli/
+staticfiles/
+static/css/tailwind.css
+
+# Planos de trabalho (rascunhos locais)
+plans/
+
+# Links de referência (não versionar)
+ref.md

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if landing %}{{ landing.title }} — {{ site.name }}{% else %}Imóveis para venda e aluguel — {{ site.name }}{% endif %}{% endblock %}
+{% block meta_description %}{% if landing %}{{ landing.title }}: veja fotos, preços e detalhes na {{ site.name }}.{% else %}Veja todos os imóveis para venda e aluguel da {{ site.name }}.{% endif %}{% endblock %}
+{% block robots %}{% if noindex %}noindex, follow{% else %}index, follow{% endif %}{% endblock %}
+
+{% block content %}
+<h1 class="font-display text-3xl md:text-5xl">{% if landing %}{{ landing.title }}{% else %}Imóveis para comprar e alugar{% endif %}</h1>
+<div class="mt-10 grid gap-10 lg:grid-cols-[17rem_1fr]">
+  <details id="filtros" open class="lg:self-start border border-line bg-surface rounded-lg">
+    <summary class="lg:hidden cursor-pointer px-4 py-3 font-semibold">Filtros</summary>
+    <form method="get" action="{% url 'properties:list' %}" class="p-4 space-y-3"
+          hx-get="{% url 'properties:list' %}" hx-target="#results" hx-push-url="true"
+          hx-trigger="change, keyup changed delay:400ms from:input[type=number]">
+      {% for field in filter.form %}
+        <div><label for="{{ field.id_for_label }}" class="field-label">{{ field.label }}</label>{{ field }}</div>
+      {% endfor %}
+      <button type="submit" class="btn btn-dark w-full">Buscar</button>
+      <a href="{% url 'properties:list' %}" class="block text-center text-sm underline underline-offset-4">Limpar filtros</a>
+    </form>
+  </details>
+  <div id="results">
+    {% include "properties/partials/results.html" %}
+  </div>
+</div>
+<script>
+  (function () {
+    var d = document.getElementById('filtros');
+    if (d && window.matchMedia('(max-width: 1023px)').matches) d.removeAttribute('open');
+  })();
+</script>
+<script src="{% static 'core/admin/masks.js' %}" defer></script>
+{% endblock %}

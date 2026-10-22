@@ -1,0 +1,31 @@
+{% load static %}
+<div id="search-box">
+  {% if sent %}
+    <div class="bg-accent-soft border border-line rounded-lg p-6 max-w-xl" role="status">
+      <h2 class="font-display text-2xl mb-2">Recebemos seu pedido</h2>
+      <p>Um corretor vai procurar imóveis com o seu perfil e chamar você no WhatsApp.</p>
+      <p class="mt-4"><a class="btn" href="{% url 'properties:list' %}">Ver imóveis enquanto isso</a></p>
+    </div>
+  {% else %}
+  <form method="post" action="{% url 'leads:search' %}" hx-post="{% url 'leads:search' %}" hx-target="#search-box" hx-swap="outerHTML"
+        class="grid gap-4 sm:grid-cols-2 max-w-xl bg-surface border border-line rounded-lg p-6">
+    {% csrf_token %}
+    {% for e in form.non_field_errors %}<p class="sm:col-span-2 text-danger text-sm" role="alert">{{ e }}</p>{% endfor %}
+    <div style="position:absolute;left:-9999px" aria-hidden="true">{{ form.website }}</div>
+    {% for field in form.visible_fields %}
+      {% if field.name != "website" and field.name != "lgpd_consent" %}
+      <div class="{% if field.name == 'notes' %}sm:col-span-2{% endif %}">
+        <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+        {% for e in field.errors %}<p class="text-danger text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}
+      </div>
+      {% endif %}
+    {% endfor %}
+    <div class="sm:col-span-2">
+      <label class="flex items-start gap-2 text-sm">{{ form.lgpd_consent }} <span>{{ form.lgpd_consent.label }} <a class="underline" href="{% url 'core:privacy' %}">política de privacidade</a>.</span></label>
+      {% for e in form.lgpd_consent.errors %}<p class="text-danger text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}
+    </div>
+    <button type="submit" class="btn sm:col-span-2">Enviar pedido</button>
+  </form>
+  <script src="{% static 'core/admin/masks.js' %}"></script>
+  {% endif %}
+</div>

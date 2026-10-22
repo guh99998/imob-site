@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Anuncie seu imóvel — {{ site.name }}{% endblock %}
+{% block meta_description %}Quer vender ou alugar seu imóvel? Fale com a {{ site.name }}.{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl md:text-5xl">Anuncie seu imóvel</h1>
+<div class="mt-6 grid gap-10 lg:grid-cols-2">
+  <div class="space-y-4 max-w-prose">
+    <p>A gente avalia, fotografa e cuida do anúncio até a chave mudar de mãos. Conte um pouco sobre o seu imóvel (tipo, bairro, valor desejado) e um corretor retorna.</p>
+    {% include "core/partials/contact_links.html" with message="Olá, quero anunciar meu imóvel." %}
+  </div>
+  {% include "leads/partials/contact_box.html" %}
+</div>
+{% endblock %}

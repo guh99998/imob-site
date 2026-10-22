@@ -1,0 +1,26 @@
+<div id="contact-box">
+  {% if sent %}
+    <div class="bg-accent-soft border border-line rounded-lg p-6" role="status">
+      <h2 class="font-display text-2xl mb-2">Mensagem enviada</h2>
+      <p>Obrigado! Entraremos em contato em breve.</p>
+    </div>
+  {% else %}
+  <form method="post" action="{{ action }}" hx-post="{{ action }}" hx-target="#contact-box" hx-swap="outerHTML"
+        class="space-y-3 max-w-lg">
+    {% csrf_token %}
+    {% for e in form.non_field_errors %}<p class="text-danger text-sm" role="alert">{{ e }}</p>{% endfor %}
+    <div style="position:absolute;left:-9999px" aria-hidden="true">{{ form.website }}</div>
+    {% for field in form.visible_fields %}
+      {% if field.name != "website" %}
+      <div>
+        <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }}</label>
+        {{ field }}
+        {% for e in field.errors %}<p class="text-danger text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}
+      </div>
+      {% endif %}
+    {% endfor %}
+    <p class="text-xs">Ao enviar, você concorda com a <a class="underline" href="{% url 'core:privacy' %}">política de privacidade</a>.</p>
+    <button type="submit" class="btn w-full sm:w-auto">Enviar mensagem</button>
+  </form>
+  {% endif %}
+</div>

@@ -1,0 +1,45 @@
+[project]
+name = "imob-site"
+version = "0.1.0"
+description = "Site de imobiliária (venda e aluguel)"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=6.1,<6.2",
+    "django-environ",
+    "pillow",
+    "django-filter",
+    "django-htmx",
+    "django-tailwind-cli",
+    "whitenoise",
+    "psycopg[binary]",
+    "gunicorn",
+    "django-storages[s3]",
+    "django-unfold>=0.110.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-django",
+    "factory-boy",
+    "ruff",
+    "django-debug-toolbar",
+    "playwright>=1.64.1",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "imob_site.settings.dev"
+python_files = ["test_*.py"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+ignore = ["DJ001"]

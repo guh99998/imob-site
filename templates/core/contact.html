@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Contato — {{ site.name }}{% endblock %}
+{% block meta_description %}Fale com a {{ site.name }} por WhatsApp, telefone ou e-mail.{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl md:text-5xl">Contato</h1>
+<div class="mt-6 grid gap-10 lg:grid-cols-2">
+  <div class="space-y-4 max-w-prose">
+    <p>Estamos prontos para ajudar você a comprar, vender ou alugar.</p>
+    {% include "core/partials/contact_links.html" with message="Olá, gostaria de falar com um corretor." %}
+    {% if site.address %}<p><strong>Endereço:</strong> {{ site.address }}</p>{% endif %}
+    {% if features.searches %}<p>Procurando algo específico? <a class="underline" href="{% url 'leads:search' %}">Conte o que você procura</a>.</p>{% endif %}
+  </div>
+  {% include "leads/partials/contact_box.html" %}
+</div>
+{% endblock %}
