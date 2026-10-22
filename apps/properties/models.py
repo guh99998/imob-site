@@ -1,6 +1,7 @@
 from functools import cached_property
 from io import BytesIO
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db import models, transaction
@@ -256,6 +257,58 @@ class Property(models.Model):
         Feature, blank=True, related_name="properties", verbose_name=_("comodidades")
     )
 
+    class Source(models.TextChoices):
+        OWN = "OWN", _("Própria")
+        PARTNER = "PARTNER", _("Parceiro")
+        OWNER = "OWNER", _("Proprietário")
+
+    # Responsáveis e auditoria: só no painel, nunca em páginas públicas.
+    source = models.CharField(
+        _("origem"), max_length=7, choices=Source, default=Source.OWN, blank=True
+    )
+    broker = models.ForeignKey(
+        "people.Broker",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="properties",
+        verbose_name=_("corretor responsável"),
+    )
+    partner = models.ForeignKey(
+        "people.Partner",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="properties",
+        verbose_name=_("parceiro"),
+    )
+    owner = models.ForeignKey(
+        "people.Owner",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="properties",
+        verbose_name=_("proprietário"),
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=_("cadastrado por"),
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=_("editado por"),
+    )
+
     is_featured = models.BooleanField(
         _("destaque"), default=False, help_text=_("Imóveis em destaque aparecem na página inicial.")
     )
@@ -269,6 +322,7 @@ class Property(models.Model):
         verbose_name = _("imóvel")
         verbose_name_plural = _("imóveis")
         ordering = ["-created_at"]
+        indexes = [models.Index(fields=["zip_code", "number"], name="property_zip_number_idx")]
 
     def __str__(self):
         return f"{self.code} - {self.title}"

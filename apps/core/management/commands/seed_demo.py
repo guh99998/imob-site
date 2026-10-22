@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
 
 from apps.core.models import SiteSettings
+from apps.people.models import Broker, Owner, Partner
 from apps.properties.models import Category, City, Feature, Neighborhood, Property, PropertyPhoto
 
 PHOTOS_DIR = Path(settings.BASE_DIR) / "demo" / "photos"
@@ -127,6 +128,18 @@ class Command(BaseCommand):
             for name in names:
                 neighborhoods[name] = Neighborhood.objects.get_or_create(city=city, name=name)[0]
 
+        broker, _c = Broker.objects.get_or_create(
+            name="Marina Souza", defaults={"creci": "12345-F", "phone": "(11) 90000-0001"}
+        )
+        owner, _c = Owner.objects.get_or_create(
+            name="Carlos Pereira",
+            defaults={"document": "529.982.247-25", "phone": "(11) 90000-0002"},
+        )
+        partner, _c = Partner.objects.get_or_create(
+            name="Ana Lima",
+            defaults={"company": "Lima Imóveis", "creci": "54321-F", "commission": "50%"},
+        )
+
         created = 0
         for i, row in enumerate(PROPERTIES):
             (num, title, cat, _city, nb, purpose, sale, rent, beds, suites, baths, park, area,
@@ -149,6 +162,10 @@ class Command(BaseCommand):
                 parking_spaces=park,
                 area_total=Decimal(area),
                 is_featured=featured,
+                broker=broker,
+                owner=owner if i % 3 == 0 else None,
+                partner=partner if i % 4 == 1 else None,
+                source="OWNER" if i % 3 == 0 else "PARTNER" if i % 4 == 1 else "OWN",
             )
             prop.features.set(features[i % 3 :: 2][:5])
             for order, pid in enumerate(photos):

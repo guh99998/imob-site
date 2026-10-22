@@ -2,6 +2,8 @@
 
 from django.urls import reverse
 
+from .features import enabled
+
 
 def _perm(codename):
     def check(request):
@@ -18,7 +20,24 @@ can_view_city = _perm("properties.view_city")
 can_view_neighborhood = _perm("properties.view_neighborhood")
 can_view_lead = _perm("leads.view_lead")
 can_view_settings = _perm("core.view_sitesettings")
-can_view_user = _perm("auth.view_user")
+
+
+def _feature_perm(feature, codename):
+    def check(request):
+        return enabled(feature) and request.user.has_perm(codename)
+
+    return check
+
+
+can_view_broker = _feature_perm("brokers", "people.view_broker")
+can_view_partner = _feature_perm("partners", "people.view_partner")
+can_view_owner = _feature_perm("owners", "people.view_owner")
+
+
+def can_view_user(request):
+    from apps.people.roles import ADMIN, role_of
+
+    return role_of(request.user) == ADMIN and request.user.has_perm("auth.view_user")
 
 
 def masks_script(request):

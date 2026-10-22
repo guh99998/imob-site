@@ -23,12 +23,20 @@ class FeatureGatedAdminMixin:
 
     feature = None
 
+    def _feature_off(self):
+        return bool(self.feature) and not enabled(self.feature)
+
     def has_module_permission(self, request):
-        if self.feature and not enabled(self.feature):
-            return False
-        return super().has_module_permission(request)
+        return not self._feature_off() and super().has_module_permission(request)
 
     def has_view_permission(self, request, obj=None):
-        if self.feature and not enabled(self.feature):
-            return False
-        return super().has_view_permission(request, obj)
+        return not self._feature_off() and super().has_view_permission(request, obj)
+
+    def has_add_permission(self, request):
+        return not self._feature_off() and super().has_add_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return not self._feature_off() and super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        return not self._feature_off() and super().has_delete_permission(request, obj)

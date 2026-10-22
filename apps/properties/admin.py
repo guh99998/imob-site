@@ -9,7 +9,9 @@ from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
 
 from apps.core.admin_masks import MaskedAdminMixin
+from apps.core.features import enabled
 from apps.core.models import SiteSettings
+from apps.people.scoping import ScopedByRoleMixin, is_scoped
 
 from .models import (
     PUBLIC_STATUSES,
@@ -108,7 +110,7 @@ class PropertyPhotoInline(TabularInline):
 
 
 @admin.register(Property)
-class PropertyAdmin(MaskedAdminMixin, ModelAdmin):
+class PropertyAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
     masks = {
         "sale_price": "money",
         "rent_price": "money",
@@ -118,7 +120,7 @@ class PropertyAdmin(MaskedAdminMixin, ModelAdmin):
         "area_built": "area",
         "zip_code": "cep",
     }
-    readonly_fields = ("code_display",)
+    readonly_fields = ("code_display", "audit_created", "audit_updated")
     list_display = (
         "cover_preview",
         "code",
@@ -190,6 +192,68 @@ class PropertyAdmin(MaskedAdminMixin, ModelAdmin):
             },
         ),
     )
+
+    PEOPLE_FIELDS = {"broker": "brokers", "partner": "partners", "owner": "owners"}
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = list(super().get_fieldsets(request, obj))
+        hidden = {f for f, feat in self.PEOPLE_FIELDS.items() if not enabled(feat)}
+        people = ["source", *(f for f in self.PEOPLE_FIELDS if f not in hidden)]
+        fieldsets.append((_("Responsáveis"), {"classes": ["tab"], "fields": people}))
+        if obj is not None:
+            fieldsets.append(
+                (_("Registro"), {"classes": ["tab"], "fields": ("audit_created", "audit_updated")})
+            )
+        return fieldsets
+
+    def get_list_filter(self, request):
+        extra = [f for f, feat in self.PEOPLE_FIELDS.items() if enabled(feat)]
+        return (*self.list_filter, *extra)
+
+    def get_search_fields(self, request):
+        extra = [f"{f}__name" for f, feat in self.PEOPLE_FIELDS.items() if enabled(feat)]
+        return (*self.search_fields, *extra)
+
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        broker = getattr(request.user, "broker", None)
+        if broker and "broker" not in initial:
+            initial["broker"] = broker.pk
+        return initial
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "broker":
+            from apps.people.models import Broker
+
+            kwargs["queryset"] = Broker.objects.filter(is_active=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        if is_scoped(request.user) and not obj.broker_id:
+            obj.broker = getattr(request.user, "broker", None)
+        super().save_model(request, obj, form, change)
+
+    def has_delete_permission(self, request, obj=None):
+        return super().has_delete_permission(request, obj) and not is_scoped(request.user)
+
+    @display(description=_("cadastrado por"))
+    def audit_created(self, obj):
+        if not obj or not obj.created_by:
+            return "-"
+        return (
+            f"{obj.created_by.get_full_name() or obj.created_by} em {obj.created_at:%d/%m/%Y %H:%M}"
+        )
+
+    @display(description=_("última edição"))
+    def audit_updated(self, obj):
+        if not obj or not obj.updated_by:
+            return "-"
+        return (
+            f"{obj.updated_by.get_full_name() or obj.updated_by} em {obj.updated_at:%d/%m/%Y %H:%M}"
+        )
 
     @display(description=_("código"))
     def code_display(self, obj):

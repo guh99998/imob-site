@@ -7,6 +7,7 @@ from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
 
 from apps.core.admin_masks import MaskedAdminMixin
+from apps.people.scoping import ScopedByRoleMixin
 
 from .models import Lead
 
@@ -18,7 +19,8 @@ STATUS_LABELS = {
 
 
 @admin.register(Lead)
-class LeadAdmin(MaskedAdminMixin, ModelAdmin):
+class LeadAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
+    scope_prefix = "property__"
     masks = {"phone": "phone"}
     list_display = ("name", "email", "phone", "property_link", "status_badge", "created_at")
     list_filter = ("status", "created_at")

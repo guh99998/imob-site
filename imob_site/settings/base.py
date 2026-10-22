@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.properties",
     "apps.leads",
+    "apps.people",
 ]
 
 MIDDLEWARE = [
@@ -106,7 +107,7 @@ UNFOLD = {
     "SITE_HEADER": "DevLopesMóveis",
     "SITE_SUBHEADER": _("Painel de gestão"),
     "SITE_URL": "/",
-    "SHOW_HISTORY": False,
+    "SHOW_HISTORY": True,
     "THEME": "light",
     "SCRIPTS": ["apps.core.admin_navigation.masks_script"],
     "BORDER_RADIUS": "4px",
@@ -189,6 +190,30 @@ UNFOLD = {
                         "icon": "map",
                         "link": reverse_lazy("admin:properties_neighborhood_changelist"),
                         "permission": "apps.core.admin_navigation.can_view_neighborhood",
+                    },
+                ],
+            },
+            {
+                "title": _("Pessoas"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Corretores"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:people_broker_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_broker",
+                    },
+                    {
+                        "title": _("Parceiros"),
+                        "icon": "handshake",
+                        "link": reverse_lazy("admin:people_partner_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_partner",
+                    },
+                    {
+                        "title": _("Proprietários"),
+                        "icon": "real_estate_agent",
+                        "link": reverse_lazy("admin:people_owner_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_owner",
                     },
                 ],
             },

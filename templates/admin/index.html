@@ -84,5 +84,19 @@
       </ul>
     </section>
   </div>
+
+  {% if activity %}
+  <section class="dlm-panel mt-6">
+    <h2>{% trans "Atividade recente" %}</h2>
+    <ul>
+      {% for a in activity %}
+        <li>
+          <span>{{ a.user.get_full_name|default:a.user.username }}</span>
+          <small>{{ a.get_action_flag_display|default:"" }} · {{ a.content_type.name }} · {{ a.object_repr }} · {{ a.action_time|naturaltime }}</small>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
