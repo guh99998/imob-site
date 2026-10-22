@@ -35,15 +35,26 @@ def _footer_links():
     return data
 
 
+def _nav_items():
+    items = [
+        {"label": "Comprar", "url": reverse("properties:list") + "?purpose=SALE"},
+        {"label": "Alugar", "url": reverse("properties:list") + "?purpose=RENT"},
+    ]
+    if enabled("searches"):
+        items.append({"label": "Procuro um imóvel", "url": reverse("leads:search")})
+    items += [
+        {"label": "Anuncie seu imóvel", "url": reverse("core:advertise")},
+        {"label": "Contato", "url": reverse("core:contact")},
+    ]
+    for item in items:
+        item["path"] = item["url"].split("?")[0]
+    return items
+
+
 def site_settings(request):
     return {
         "site": SiteSettings.load(),
         "features": {"searches": enabled("searches")},
-        "nav_items": [
-            {"label": "Comprar", "url": reverse("properties:list") + "?purpose=SALE"},
-            {"label": "Alugar", "url": reverse("properties:list") + "?purpose=RENT"},
-            {"label": "Anuncie seu imóvel", "url": reverse("core:advertise")},
-            {"label": "Contato", "url": reverse("core:contact")},
-        ],
+        "nav_items": _nav_items(),
         **_footer_links(),
     }

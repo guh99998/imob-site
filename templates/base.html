@@ -15,7 +15,7 @@
   {% block og_image %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'img/hero-poster.jpg' %}{% endif %}">{% endblock %}
   <meta name="twitter:card" content="summary_large_image">
   <link rel="canonical" href="{% block canonical %}{{ request.scheme }}://{{ request.get_host }}{{ request.path }}{% endblock %}">
-  <meta name="theme-color" content="#173A40">
+  <meta name="theme-color" content="#ffffff">
   <link rel="preload" href="{% static 'fonts/inter-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
   {% tailwind_css %}
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
@@ -24,28 +24,28 @@
   {% block head %}{% endblock %}
 </head>
 <body class="min-h-screen flex flex-col" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-  <a href="#conteudo" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-papel focus:p-3">Ir para o conteúdo</a>
+  <a href="#conteudo" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-surface focus:p-3">Ir para o conteúdo</a>
 
-  <header class="bg-petroleo text-papel relative z-40">
+  <header class="bg-surface text-fg border-b border-line sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between gap-4">
       <a href="{% url 'core:home' %}" class="flex items-center gap-3 min-w-0">
         {% if site.logo %}<img src="{{ site.logo.url }}" alt="{{ site.name }}" width="140" height="40" class="h-9 w-auto">{% else %}<span class="font-display text-xl leading-none truncate">{{ site.name }}</span>{% endif %}
-        {% if site.creci %}<span class="hidden sm:inline text-xs text-papel/80 border-l border-papel/30 pl-3">CRECI {{ site.creci }}</span>{% endif %}
+        {% if site.creci %}<span class="hidden sm:inline text-xs text-muted border-l border-line pl-3">CRECI {{ site.creci }}</span>{% endif %}
       </a>
 
-      <nav aria-label="Principal" class="hidden md:flex items-center gap-8 text-[0.95rem] font-medium">
-        {% for item in nav_items %}<a href="{{ item.url }}" class="hover:text-latao">{{ item.label }}</a>{% endfor %}
+      <nav aria-label="Principal" class="hidden lg:flex items-center gap-6 text-[0.95rem] font-medium text-muted">
+        {% for item in nav_items %}<a href="{{ item.url }}" class="hover:text-accent{% if request.path == item.path %} text-fg{% endif %}">{{ item.label }}</a>{% endfor %}
         {% if site.whatsapp_digits %}<a href="https://wa.me/{{ site.whatsapp_digits }}" target="_blank" rel="noopener" class="btn !py-2">{% include "partials/icon_whatsapp.html" %}WhatsApp</a>{% endif %}
       </nav>
 
       {# Mobile: <details> funciona sem JS #}
-      <details class="md:hidden group" id="menu">
+      <details class="lg:hidden group" id="menu">
         <summary class="list-none cursor-pointer p-2 -mr-2" aria-label="Abrir menu" aria-controls="menu-painel">
           <svg class="group-open:hidden" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
           <svg class="hidden group-open:block" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
         </summary>
-        <nav id="menu-painel" aria-label="Principal (mobile)" class="absolute left-0 right-0 top-16 bg-petroleo border-t border-papel/15 px-5 py-4 flex flex-col text-lg font-medium shadow-lg">
-          {% for item in nav_items %}<a href="{{ item.url }}" class="py-3 border-b border-papel/10">{{ item.label }}</a>{% endfor %}
+        <nav id="menu-painel" aria-label="Principal (mobile)" class="absolute left-0 right-0 top-16 bg-surface border-y border-line px-5 py-4 flex flex-col text-lg font-medium shadow-lg">
+          {% for item in nav_items %}<a href="{{ item.url }}" class="py-3 border-b border-line">{{ item.label }}</a>{% endfor %}
           {% if site.whatsapp_digits %}<a href="https://wa.me/{{ site.whatsapp_digits }}" target="_blank" rel="noopener" class="btn mt-4">{% include "partials/icon_whatsapp.html" %}Falar no WhatsApp</a>{% endif %}
         </nav>
       </details>
@@ -58,29 +58,29 @@
     {% endblock %}
   </main>
 
-  <footer id="contato" class="bg-petroleo text-papel/85 text-[0.95rem]">
+  <footer id="contato" class="bg-fg text-surface/85 text-[0.95rem]">
     <div class="max-w-7xl mx-auto px-5 md:px-8 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-12">
       <div class="lg:col-span-4">
-        {% if site.logo %}<img src="{{ site.logo.url }}" alt="{{ site.name }}" width="160" height="48" class="h-10 w-auto">{% else %}<p class="font-display text-2xl text-papel">{{ site.name }}</p>{% endif %}
+        {% if site.logo %}<img src="{{ site.logo.url }}" alt="{{ site.name }}" width="160" height="48" class="h-10 w-auto">{% else %}<p class="font-display text-2xl text-surface">{{ site.name }}</p>{% endif %}
         {% if site.creci %}<p class="mt-3">CRECI {{ site.creci }}</p>{% endif %}
         {% if site.cnpj %}<p>CNPJ {{ site.cnpj }}</p>{% endif %}
         {% if site.about %}<p class="mt-3 max-w-xs">{{ site.about }}</p>{% endif %}
         {% if site.address %}<p class="mt-3 max-w-xs">{{ site.address }}</p>{% endif %}
       </div>
       <nav aria-label="Comprar" class="lg:col-span-2">
-        <h2 class="text-papel text-base mb-3">Comprar</h2>
+        <h2 class="text-surface text-base mb-3">Comprar</h2>
         <ul class="space-y-1.5">{% for c in footer_categories %}<li><a class="hover:underline" href="{% url 'core:landing' 'comprar' c.slug %}">{{ c.name }}</a></li>{% endfor %}</ul>
       </nav>
       <nav aria-label="Alugar" class="lg:col-span-2">
-        <h2 class="text-papel text-base mb-3">Alugar</h2>
+        <h2 class="text-surface text-base mb-3">Alugar</h2>
         <ul class="space-y-1.5">{% for c in footer_categories %}<li><a class="hover:underline" href="{% url 'core:landing' 'alugar' c.slug %}">{{ c.name }}</a></li>{% endfor %}</ul>
       </nav>
       <nav aria-label="Cidades" class="lg:col-span-2">
-        <h2 class="text-papel text-base mb-3">Onde atuamos</h2>
+        <h2 class="text-surface text-base mb-3">Onde atuamos</h2>
         <ul class="space-y-1.5">{% for c in footer_cities %}<li><a class="hover:underline" href="{% url 'properties:list' %}?city={{ c.pk }}">{{ c.name }}/{{ c.state }}</a></li>{% endfor %}</ul>
       </nav>
       <div class="lg:col-span-2 space-y-1.5">
-        <h2 class="text-papel text-base mb-3">Institucional</h2>
+        <h2 class="text-surface text-base mb-3">Institucional</h2>
         {% if features.searches %}<p><a class="hover:underline" href="{% url 'leads:search' %}">Procuro um imóvel</a></p>{% endif %}
         <p><a class="hover:underline" href="{% url 'core:advertise' %}">Anuncie seu imóvel</a></p>
         <p><a class="hover:underline" href="{% url 'core:contact' %}">Contato</a></p>
@@ -93,12 +93,12 @@
         </p>
       </div>
     </div>
-    <div class="border-t border-papel/15 py-4 text-center text-sm text-papel/70">© {% now "Y" %} {{ site.name }}. Todos os direitos reservados.</div>
+    <div class="border-t border-surface/15 py-4 text-center text-sm text-surface/70">© {% now "Y" %} {{ site.name }}. Todos os direitos reservados.</div>
   </footer>
 
   {% if site.whatsapp_digits %}
   <a href="https://wa.me/{{ site.whatsapp_digits }}" target="_blank" rel="noopener" aria-label="Falar no WhatsApp"
-     class="md:hidden fixed bottom-4 right-4 btn shadow-lg">{% include "partials/icon_whatsapp.html" %}WhatsApp</a>
+     class="lg:hidden fixed bottom-4 right-4 btn shadow-lg">{% include "partials/icon_whatsapp.html" %}WhatsApp</a>
   {% endif %}
 </body>
 </html>

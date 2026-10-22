@@ -41,7 +41,7 @@ PROPERTIES = [
      ["106399", "1080721", "1571460", "3754594", "3315291"],
      "Casa ampla em rua tranquila, com cozinha integrada à sala e jardim nos fundos."),
     ("02", "Sobrado com garagem para três carros", "Casa", "Vila Serena", "Alto da Colina",
-     S, 1250000, None, 5, 3, 5, 3, 410, True, "PUBLISHED",
+     S, 1250000, None, 5, 3, 5, 3, 410, False, "PUBLISHED",
      ["1396122", "2635038", "1571463", "4857775"],
      "Sobrado de esquina com suíte máster, escritório e área de lazer completa."),
     ("03", "Casa com varanda e vista para o canal", "Casa", "Porto Claro", "Beira-Rio",

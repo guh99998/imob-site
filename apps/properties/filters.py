@@ -1,7 +1,12 @@
 import django_filters as filters
 from django import forms
+from django.core.exceptions import ValidationError
+
+from apps.core.widgets import parse_br_decimal
 
 from .models import Category, City, Neighborhood, Property
+
+PRICE_ATTRS = {"class": "field", "inputmode": "numeric", "data-mask": "money"}
 
 ORDERING_CHOICES = [
     ("-published_at", "Mais recentes"),
@@ -66,8 +71,12 @@ class PropertyFilter(filters.FilterSet):
     neighborhood = filters.ModelChoiceFilter(
         label="Bairro", queryset=Neighborhood.objects.select_related("city"), empty_label="Todos"
     )
-    min_price = filters.NumberFilter(label="Preço mín.", method="filter_min_price")
-    max_price = filters.NumberFilter(label="Preço máx.", method="filter_max_price")
+    min_price = filters.CharFilter(
+        label="Preço mín.", method="filter_min_price", widget=forms.TextInput(PRICE_ATTRS)
+    )
+    max_price = filters.CharFilter(
+        label="Preço máx.", method="filter_max_price", widget=forms.TextInput(PRICE_ATTRS)
+    )
     bedrooms = filters.NumberFilter(
         label="Quartos (mín.)", field_name="bedrooms", lookup_expr="gte"
     )
@@ -109,11 +118,23 @@ class PropertyFilter(filters.FilterSet):
             return queryset.filter(purpose__in=[Property.Purpose.RENT, Property.Purpose.BOTH])
         return queryset
 
+    def _price(self, value):
+        try:
+            return parse_br_decimal(value)
+        except ValidationError:
+            return None
+
     def filter_min_price(self, queryset, name, value):
-        return queryset.filter(**{f"{self._price_field()}__gte": value})
+        price = self._price(value)
+        if price is None:
+            return queryset
+        return queryset.filter(**{f"{self._price_field()}__gte": price})
 
     def filter_max_price(self, queryset, name, value):
-        return queryset.filter(**{f"{self._price_field()}__lte": value})
+        price = self._price(value)
+        if price is None:
+            return queryset
+        return queryset.filter(**{f"{self._price_field()}__lte": price})
 
     def filter_order(self, queryset, name, value):
         if value in ("price", "-price"):

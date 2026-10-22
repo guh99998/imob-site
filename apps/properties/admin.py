@@ -1,5 +1,6 @@
+from django import forms
 from django.contrib import admin, messages
-from django.db.models import Count
+from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -91,6 +92,39 @@ class FeatureAdmin(ModelAdmin):
     search_fields = ("name",)
 
 
+class MultipleImageInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleImageField(forms.ImageField):
+    """Aceita vários arquivos de uma vez (cada um validado como imagem)."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleImageInput(attrs={"accept": "image/*"}))
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single = super().clean
+        if isinstance(data, (list, tuple)):
+            return [single(d, initial) for d in data if d]
+        return [single(data, initial)] if data else []
+
+
+class PropertyAdminForm(forms.ModelForm):
+    bulk_photos = MultipleImageField(
+        label=_("Adicionar várias fotos"),
+        required=False,
+        help_text=_(
+            "Selecione várias fotos de uma vez (Ctrl/Shift + clique). Elas entram no fim da "
+            "lista; depois é só arrastar na aba Fotos para mudar a ordem."
+        ),
+    )
+
+    class Meta:
+        model = Property
+        fields = "__all__"  # noqa: DJ007 - o admin limita aos campos dos fieldsets
+
+
 class PropertyPhotoInline(TabularInline):
     model = PropertyPhoto
     extra = 3
@@ -138,6 +172,7 @@ class PropertyAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
     search_fields = ("code", "title", "street", "neighborhood__name")
     autocomplete_fields = ("neighborhood",)
     filter_horizontal = ("features",)
+    form = PropertyAdminForm
     inlines = [PropertyPhotoInline]
     actions = ["publish", "mark_sold", "mark_rented", "feature"]
     actions_row = ["view_on_site_action"]
@@ -161,6 +196,10 @@ class PropertyAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
         (
             _("Valores"),
             {"classes": ["tab"], "fields": ("sale_price", "rent_price", "condo_fee", "iptu")},
+        ),
+        (
+            _("Enviar fotos"),
+            {"classes": ["tab"], "fields": ("bulk_photos",)},
         ),
         (
             _("Características"),
@@ -235,6 +274,21 @@ class PropertyAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
         if is_scoped(request.user) and not obj.broker_id:
             obj.broker = getattr(request.user, "broker", None)
         super().save_model(request, obj, form, change)
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        files = form.cleaned_data.get("bulk_photos") or []
+        if not files:
+            return
+        prop = form.instance
+        last = prop.photos.aggregate(m=Max("order"))["m"]
+        start = 0 if last is None else last + 1
+        has_cover = prop.photos.filter(is_cover=True).exists()
+        for i, upload in enumerate(files):
+            PropertyPhoto.objects.create(
+                property=prop, image=upload, order=start + i, is_cover=not has_cover and i == 0
+            )
+        self.message_user(request, _("%d foto(s) adicionada(s).") % len(files), messages.SUCCESS)
 
     def has_delete_permission(self, request, obj=None):
         return super().has_delete_permission(request, obj) and not is_scoped(request.user)

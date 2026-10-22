@@ -1,6 +1,6 @@
 from django.core.paginator import Paginator
 from django.db.models import Case, IntegerField, Q, When
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.core import seo
 from apps.leads.forms import LeadForm
@@ -24,7 +24,7 @@ def _active_filters(f, request):
         value = f.form.cleaned_data.get(name) if hasattr(f.form, "cleaned_data") else None
         if name == "order" or value in (None, ""):
             continue
-        if isinstance(value, str):
+        if isinstance(value, str) and hasattr(field, "choices"):
             value = dict(field.choices).get(value, value)
         params = request.GET.copy()
         params.pop(name, None)
@@ -36,7 +36,13 @@ def _active_filters(f, request):
 
 
 def property_list(request, landing=None):
+    code = request.GET.get("code", "").strip()
+    if code:
+        found = Property.objects.published().filter(code__iexact=code).first()
+        if found:
+            return redirect(found.get_absolute_url())
     data = request.GET.copy()
+    data.pop("code", None)
     if landing:
         data["purpose"] = landing["purpose"]
         data["category"] = landing["category"].slug
@@ -52,6 +58,7 @@ def property_list(request, landing=None):
         "querystring": params.urlencode(),
         "chips": _active_filters(f, request),
         "landing": landing,
+        "code_not_found": code,
         # Só a lista "limpa" e as landings sem filtros extras são indexáveis.
         "noindex": bool(request.GET),
     }

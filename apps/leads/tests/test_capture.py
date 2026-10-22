@@ -16,11 +16,7 @@ SEARCH = {
     "whatsapp": "(11) 90000-1111",
     "email": "joao@example.com",
     "purpose": "SALE",
-    "neighborhoods": "Centro",
-    "min_price": "R$ 300.000,00",
     "max_price": "R$ 900.000,00",
-    "min_bedrooms": 2,
-    "min_parking": 1,
     "notes": "Perto de escola",
     "lgpd_consent": "on",
 }
@@ -37,10 +33,10 @@ def site_email():
 def test_search_form_creates_record_and_emails(client, site_email):
     house = Category.objects.get(slug="casa")
     city = CityFactory()
-    r = client.post(reverse("leads:search"), {**SEARCH, "categories": [house.pk], "city": city.pk})
+    r = client.post(reverse("leads:search"), {**SEARCH, "category": house.pk, "city": city.pk})
     assert r.status_code == 200 and "Recebemos seu pedido" in r.content.decode()
     s = PropertySearch.objects.get()
-    assert s.min_price == Decimal("300000.00") and s.max_price == Decimal("900000.00")
+    assert s.max_price == Decimal("900000.00") and s.min_price is None
     assert list(s.categories.all()) == [house] and s.city == city and s.lgpd_consent
     assert len(mail.outbox) == 1 and "procurando" in mail.outbox[0].subject
 
@@ -57,8 +53,8 @@ def test_search_requires_consent_and_valid_phone(client):
     assert not PropertySearch.objects.exists() and "aceite" in r.content.decode()
     r = client.post(reverse("leads:search"), {**SEARCH, "whatsapp": "123"})
     assert not PropertySearch.objects.exists() and "DDD" in r.content.decode()
-    r = client.post(reverse("leads:search"), {**SEARCH, "min_price": "R$ 9.000.000,00"})
-    assert not PropertySearch.objects.exists() and "máximo" in r.content.decode()
+    r = client.post(reverse("leads:search"), {**SEARCH, "max_price": "abc"})
+    assert not PropertySearch.objects.exists()
 
 
 def test_search_honeypot_and_rate_limit(client):
@@ -75,6 +71,9 @@ def test_search_page_renders_without_js(client):
     html = r.content.decode()
     assert r.status_code == 200 and "<form" in html and 'method="post"' in html
     assert "lgpd_consent" in html
+    # versão enxuta: sem checkboxes de categoria, bairros, quartos e vagas
+    for removed in ("min_bedrooms", "min_parking", "neighborhoods", 'type="checkbox" name="categ'):
+        assert removed not in html
 
 
 def test_search_feature_flag_off(client, settings):

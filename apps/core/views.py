@@ -2,6 +2,7 @@ from django.db.models import Count, Q
 from django.shortcuts import render
 from django.urls import reverse
 
+from apps.leads.forms import LeadForm
 from apps.leads.models import Lead
 from apps.leads.views import lead_page
 from apps.properties.filters import grouped_categories
@@ -49,6 +50,9 @@ def home(request):
             "categories": categories,
             "category_groups": grouped_categories(),
             "city_choices": City.objects.all(),
+            "neighborhood_groups": City.objects.prefetch_related("neighborhoods"),
+            "listing_form": LeadForm(),
+            "listing_action": reverse("core:advertise"),
             "cities": cities,
             "neighborhoods": neighborhoods,
         },

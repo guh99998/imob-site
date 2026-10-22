@@ -112,20 +112,21 @@ UNFOLD = {
     "SCRIPTS": ["apps.core.admin_navigation.masks_script"],
     "BORDER_RADIUS": "4px",
     "DASHBOARD_CALLBACK": "apps.core.admin_dashboard.dashboard_callback",
-    # Paleta alinhada ao site público: petróleo como cor principal.
+    # Paleta alinhada ao site público.
     "COLORS": {
+        # Roxo de desenvolvedorgustavolopes.com.br (#6d28d9 = 700)
         "primary": {
-            "50": "oklch(97% .010 205)",
-            "100": "oklch(94% .020 205)",
-            "200": "oklch(88% .035 205)",
-            "300": "oklch(78% .050 205)",
-            "400": "oklch(65% .065 205)",
-            "500": "oklch(52% .070 208)",
-            "600": "oklch(42% .065 210)",
-            "700": "oklch(36% .060 210)",
-            "800": "oklch(31% .052 210)",
-            "900": "oklch(27% .045 210)",
-            "950": "oklch(21% .035 210)",
+            "50": "#f5f3ff",
+            "100": "#ede9fe",
+            "200": "#ddd6fe",
+            "300": "#c4b5fd",
+            "400": "#a78bfa",
+            "500": "#8b5cf6",
+            "600": "#7c3aed",
+            "700": "#6d28d9",
+            "800": "#5b21b6",
+            "900": "#4c1d95",
+            "950": "#2e1065",
         },
     },
     "SIDEBAR": {

@@ -16,15 +16,15 @@
   <div class="md:hidden relative">
     <div class="gallery-track" data-track>
       {% for ph in photos %}
-      <a href="{{ ph.image.url }}" data-lightbox data-i="{{ forloop.counter0 }}" class="block aspect-[4/3] overflow-hidden bg-linha">
+      <a href="{{ ph.image.url }}" data-lightbox data-i="{{ forloop.counter0 }}" class="block aspect-[4/3] overflow-hidden bg-line">
         <img src="{{ ph.src_lg }}" alt="{{ ph.caption|default:property.title }}" width="1200" height="900" class="w-full h-full object-cover" {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async">
       </a>
       {% endfor %}
     </div>
     {% if photos|length > 1 %}
-    <span class="absolute bottom-2 left-2 bg-petroleo/80 text-papel text-sm px-2.5 py-1 tabular-nums" data-counter aria-live="polite">1/{{ photos|length }}</span>
-    <button type="button" data-gprev class="hidden js-show absolute left-2 top-1/2 -translate-y-1/2 bg-petroleo/80 text-papel w-11 h-11 text-2xl" aria-label="Foto anterior">&lsaquo;</button>
-    <button type="button" data-gnext class="hidden js-show absolute right-2 top-1/2 -translate-y-1/2 bg-petroleo/80 text-papel w-11 h-11 text-2xl" aria-label="Próxima foto">&rsaquo;</button>
+    <span class="absolute bottom-2 left-2 bg-fg/80 text-surface text-sm px-2.5 py-1 tabular-nums" data-counter aria-live="polite">1/{{ photos|length }}</span>
+    <button type="button" data-gprev class="hidden js-show absolute left-2 top-1/2 -translate-y-1/2 bg-fg/80 text-surface w-11 h-11 text-2xl" aria-label="Foto anterior">&lsaquo;</button>
+    <button type="button" data-gnext class="hidden js-show absolute right-2 top-1/2 -translate-y-1/2 bg-fg/80 text-surface w-11 h-11 text-2xl" aria-label="Próxima foto">&rsaquo;</button>
     {% endif %}
   </div>
   <div class="hidden md:grid gap-2 md:grid-cols-4 md:grid-rows-2">
@@ -34,28 +34,28 @@
     {% for ph in photos|slice:"1:5" %}
     <a href="{{ ph.image.url }}" class="block overflow-hidden relative h-[13.9rem]" data-lightbox data-i="{{ forloop.counter }}">
       <img src="{{ ph.src_sm }}" alt="{{ ph.caption|default:property.title }}" width="640" height="480" loading="lazy" decoding="async" class="w-full h-full object-cover">
-      {% if forloop.last and photos|length > 5 %}<span class="absolute inset-0 bg-petroleo/70 text-papel flex items-center justify-center font-semibold">+{{ photos|length|add:"-5" }} fotos</span>{% endif %}
+      {% if forloop.last and photos|length > 5 %}<span class="absolute inset-0 bg-fg/70 text-surface flex items-center justify-center font-semibold">+{{ photos|length|add:"-5" }} fotos</span>{% endif %}
     </a>
     {% endfor %}
     {% for ph in photos|slice:"5:" %}<a href="{{ ph.image.url }}" class="sr-only" data-lightbox data-i="{{ forloop.counter|add:4 }}">{{ ph.caption|default:property.title }}</a>{% endfor %}
   </div>
 </div>
-<dialog id="lightbox" class="m-auto max-w-[100vw] max-h-[100vh] w-full h-full bg-transparent p-0 backdrop:bg-petroleo/95" aria-label="Galeria de fotos">
+<dialog id="lightbox" class="m-auto max-w-[100vw] max-h-[100vh] w-full h-full bg-transparent p-0 backdrop:bg-fg/95" aria-label="Galeria de fotos">
   <div class="relative w-full h-full flex items-center justify-center">
     <img alt="" class="max-w-full max-h-[85vh] object-contain select-none touch-pan-y" draggable="false">
     <form method="dialog" class="absolute top-3 right-3"><button class="btn" value="close" aria-label="Fechar galeria">Fechar</button></form>
-    <button type="button" data-prev class="absolute left-2 top-1/2 -translate-y-1/2 bg-papel text-petroleo w-12 h-12 text-3xl rounded-full" aria-label="Foto anterior">&lsaquo;</button>
-    <button type="button" data-next class="absolute right-2 top-1/2 -translate-y-1/2 bg-papel text-petroleo w-12 h-12 text-3xl rounded-full" aria-label="Próxima foto">&rsaquo;</button>
-    <p class="absolute bottom-3 left-1/2 -translate-x-1/2 text-papel text-sm tabular-nums bg-petroleo/70 px-3 py-1" data-lcounter></p>
+    <button type="button" data-prev class="absolute left-2 top-1/2 -translate-y-1/2 bg-surface text-fg w-12 h-12 text-3xl rounded-full" aria-label="Foto anterior">&lsaquo;</button>
+    <button type="button" data-next class="absolute right-2 top-1/2 -translate-y-1/2 bg-surface text-fg w-12 h-12 text-3xl rounded-full" aria-label="Próxima foto">&rsaquo;</button>
+    <p class="absolute bottom-3 left-1/2 -translate-x-1/2 text-surface text-sm tabular-nums bg-fg/70 px-3 py-1" data-lcounter></p>
   </div>
 </dialog>
 {% else %}
-<div class="aspect-[16/7] bg-linha"></div>
+<div class="aspect-[16/7] bg-line"></div>
 {% endif %}
 
 <div class="mt-10 grid gap-12 lg:grid-cols-[1fr_22rem]">
   <div>
-    <p class="text-musgo font-medium">{{ property.category.name }} · {{ property.full_address }} · Cód. {{ property.code }}</p>
+    <p class="text-muted font-medium">{{ property.category.name }} · {{ property.full_address }} · Cód. {{ property.code }}</p>
     <h1 class="font-display text-3xl md:text-5xl mt-2 max-w-2xl">{{ property.title }}</h1>
 
     <h2 class="sr-only">Ficha técnica</h2>
@@ -75,7 +75,7 @@
     {% if property.features.all %}
     <h2 class="font-display text-3xl mt-12 mb-3">Comodidades</h2>
     <ul class="grid sm:grid-cols-2 gap-x-8 max-w-xl">
-      {% for f in property.features.all %}<li class="py-1.5 border-b border-linha">{{ f.name }}</li>{% endfor %}
+      {% for f in property.features.all %}<li class="py-1.5 border-b border-line">{{ f.name }}</li>{% endfor %}
     </ul>
     {% endif %}
 
@@ -84,15 +84,15 @@
   </div>
 
   <aside class="space-y-6 lg:sticky lg:top-6 lg:self-start">
-    <div class="bg-papel border border-petroleo p-5">
-      {% if property.status == "RESERVED" %}<p class="text-alerta font-semibold mb-2">Reservado</p>{% endif %}
+    <div class="bg-surface border border-line rounded-lg p-5 shadow-sm">
+      {% if property.status == "RESERVED" %}<p class="text-danger font-semibold mb-2">Reservado</p>{% endif %}
       {% if property.purpose != "RENT" and property.sale_price %}
         <p class="text-sm">Venda</p>
-        <p class="font-display text-3xl text-latao-escuro tabular-nums">R$ {{ property.sale_price|intcomma }}</p>
+        <p class="font-display text-3xl text-accent tabular-nums">R$ {{ property.sale_price|intcomma }}</p>
       {% endif %}
       {% if property.purpose != "SALE" and property.rent_price %}
         <p class="text-sm mt-3">Aluguel</p>
-        <p class="font-display text-3xl text-latao-escuro tabular-nums">R$ {{ property.rent_price|intcomma }}<span class="font-sans text-sm text-petroleo"> /mês</span></p>
+        <p class="font-display text-3xl text-accent tabular-nums">R$ {{ property.rent_price|intcomma }}<span class="font-sans text-sm text-fg"> /mês</span></p>
       {% endif %}
       {% if property.condo_fee %}<p class="text-sm mt-3">Condomínio: R$ {{ property.condo_fee|intcomma }}</p>{% endif %}
       {% if property.iptu %}<p class="text-sm">IPTU: R$ {{ property.iptu|intcomma }}</p>{% endif %}
@@ -104,7 +104,7 @@
       {% endif %}
     </div>
 
-    <div id="lead-box" class="bg-papel border border-linha p-5">
+    <div id="lead-box" class="bg-surface border border-line rounded-lg p-5">
       <h2 class="font-display text-2xl mb-3">Tenho interesse</h2>
       {% include "leads/partials/form.html" %}
     </div>
@@ -114,7 +114,7 @@
 {% if similar %}
 <section class="mt-20" aria-labelledby="semelhantes">
   <h2 id="semelhantes" class="font-display text-3xl md:text-4xl">Imóveis semelhantes</h2>
-  <div class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="mt-8 grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
     {% for p in similar %}{% include "partials/property_card.html" %}{% endfor %}
   </div>
 </section>
