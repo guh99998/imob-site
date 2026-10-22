@@ -7,6 +7,9 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Toda feature nasce em `specs/NNN-nome.md` (copiar `specs/000-template.md`).
 - Antes de codar: ler o spec, confirmar critérios de aceite. Ao terminar: marcar tarefas e `Status: Concluído`.
 - Não implementar fora do escopo do spec ativo; ideias novas viram um novo spec.
+- **No fim de cada feature:** atualizar o `README.md` (o que tem hoje, estrutura, roadmap) e este `CLAUDE.md` (stack, comandos, convenções novas) antes do commit.
+- Branches: trabalho em `develop`; `main` só recebe features concluídas (merge a pedido do usuário).
+- Deploy não é Heroku: `Dockerfile` genérico (sem Procfile).
 
 ## Comandos
 - Instalar: `uv sync` (uv não instalado? `pip install uv`)
@@ -29,4 +32,5 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Categorias de imóvel são cadastro editável (`Category`), não TextChoices.
 - CRUD é feito no Django Admin (django-unfold; sidebar em `UNFOLD["SIDEBAR"]`) — evoluir o admin antes de criar telas próprias.
 - Testes para models, filtros e views em `apps/<app>/tests/`, usando factory-boy.
+- Ícones: Bootstrap Icons, só os necessários, como SVG inline em `templates/partials/icons/` (sem importar a biblioteca).
 - Não commitar `.env`, `db.sqlite3`, `media/`.

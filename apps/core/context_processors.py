@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.cache import cache
 from django.db.models import Count, Q
 from django.urls import reverse
@@ -55,6 +56,7 @@ def site_settings(request):
     return {
         "site": SiteSettings.load(),
         "features": {"searches": enabled("searches")},
+        "developer_credit": settings.DEVELOPER_CREDIT,
         "nav_items": _nav_items(),
         **_footer_links(),
     }

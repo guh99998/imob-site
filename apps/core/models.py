@@ -4,6 +4,10 @@ from django.utils.translation import gettext_lazy as _
 
 from .validators import validate_cnpj
 
+DEFAULT_WHATSAPP_MESSAGE = (
+    "Olá! Tenho interesse no imóvel {codigo} – {titulo} ({bairro}), {preco}. {link}"
+)
+
 
 class SiteSettings(models.Model):
     """Singleton com os dados de contato da imobiliária."""
@@ -29,6 +33,15 @@ class SiteSettings(models.Model):
         max_length=160,
         blank=True,
         help_text=_("Resumo que aparece nos resultados do Google (até 160 caracteres)."),
+    )
+    whatsapp_message = models.TextField(
+        _("mensagem do WhatsApp"),
+        default=DEFAULT_WHATSAPP_MESSAGE,
+        blank=True,
+        help_text=_(
+            "Texto enviado ao clicar no WhatsApp de um imóvel. Pode usar {codigo}, {titulo}, "
+            "{bairro}, {preco} e {link}."
+        ),
     )
     max_featured = models.PositiveSmallIntegerField(
         _("máximo de destaques"),

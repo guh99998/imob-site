@@ -93,7 +93,13 @@
         </p>
       </div>
     </div>
-    <div class="border-t border-surface/15 py-4 text-center text-sm text-surface/70">© {% now "Y" %} {{ site.name }}. Todos os direitos reservados.</div>
+    <div class="border-t border-surface/15 py-4 text-center text-sm text-surface/70">© {% now "Y" %} {{ site.name }}. Todos os direitos reservados.
+      {% if developer_credit %}
+      <span class="block mt-1">Desenvolvido por {{ developer_credit.name }}
+        <a class="inline-block align-middle ml-2 hover:text-surface" href="{{ developer_credit.instagram }}" target="_blank" rel="noopener" aria-label="Instagram do desenvolvedor">{% include "partials/icons/instagram.html" %}</a>
+        <a class="inline-block align-middle ml-1 hover:text-surface" href="{{ developer_credit.github }}" target="_blank" rel="noopener" aria-label="GitHub do desenvolvedor">{% include "partials/icons/github.html" %}</a>
+      </span>
+      {% endif %}</div>
   </footer>
 
   {% if site.whatsapp_digits %}

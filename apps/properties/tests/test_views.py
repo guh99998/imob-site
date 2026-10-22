@@ -38,7 +38,7 @@ def test_detail_renders_with_whatsapp(client):
     assert r.status_code == 200
     assert "Piscina" in html
     assert (
-        "https://wa.me/5511999998888?text=Ol%C3%A1%2C%20tenho%20interesse%20no%20im%C3%B3vel%20"
+        "https://wa.me/5511999998888?text=Ol%C3%A1%21%20Tenho%20interesse%20no%20im%C3%B3vel%20"
         + prop.code
         in html
     )

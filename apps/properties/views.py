@@ -113,5 +113,7 @@ def property_detail(request, slug):
             ),
             "jsonld": seo.listing(request, prop, photos),
             "similar": similar,
+            "whatsapp_text": prop.whatsapp_text(request),
+            "share_url": prop.share_url(request),
         },
     )

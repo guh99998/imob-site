@@ -99,9 +99,12 @@
 
       {% if site.whatsapp_digits %}
       <a target="_blank" rel="noopener"
-         href="https://wa.me/{{ site.whatsapp_digits }}?text={{ 'Olá, tenho interesse no imóvel '|add:property.code|urlencode }}"
+         href="https://wa.me/{{ site.whatsapp_digits }}?text={{ whatsapp_text|urlencode }}"
          class="btn w-full mt-5">Falar no WhatsApp</a>
       {% endif %}
+      <a data-share href="{{ share_url }}"
+         class="flex items-center justify-center gap-2 underline text-sm mt-3">{% include "partials/icons/share.html" %}Copiar link do imóvel</a>
+      <p data-share-feedback class="text-sm text-center text-muted mt-1" role="status" aria-live="polite"></p>
     </div>
 
     <div id="lead-box" class="bg-surface border border-line rounded-lg p-5">
@@ -166,3 +169,15 @@
 })();
 </script>
 {% endblock %}
+
+<script>
+document.querySelectorAll("[data-share]").forEach(function (el) {
+  el.addEventListener("click", function (e) {
+    if (!navigator.clipboard) return;
+    e.preventDefault();
+    navigator.clipboard.writeText(el.href).then(function () {
+      el.parentNode.querySelector("[data-share-feedback]").textContent = "Link copiado";
+    });
+  });
+});
+</script>

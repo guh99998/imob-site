@@ -178,6 +178,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     actions = ["publish", "mark_sold", "mark_rented", "feature"]
     actions_row = ["view_on_site_action"]
     warn_unsaved_form = True
+    change_form_after_template = "admin/properties/client_message.html"
     fieldsets = (
         (
             _("Informações"),
@@ -350,6 +351,15 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("photos")
+
+    def render_change_form(self, request, context, add=False, change=False, form_url="", obj=None):
+        if obj is not None and obj.pk:
+            context["client_message"] = (
+                obj.whatsapp_text(request)
+                if obj.status in PUBLIC_STATUSES
+                else f"{obj.code} – {obj.title}"
+            )
+        return super().render_change_form(request, context, add, change, form_url, obj)
 
     @action(description=_("Ver no site"), url_path="ver-no-site")
     def view_on_site_action(self, request, object_id):

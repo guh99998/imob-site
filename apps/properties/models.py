@@ -164,6 +164,11 @@ class Feature(models.Model):
 PUBLIC_STATUSES = ("PUBLISHED", "RESERVED")
 
 
+class _SafeDict(dict):
+    def __missing__(self, key):
+        return "{" + key + "}"
+
+
 class PropertyQuerySet(models.QuerySet):
     def published(self):
         """O que o público vê: publicado e reservado (o resto fica só no painel)."""
@@ -385,6 +390,32 @@ class Property(models.Model):
         if self.purpose == self.Purpose.RENT:
             return self.rent_price
         return self.sale_price or self.rent_price
+
+    def share_url(self, request=None, source=None):
+        path = self.get_absolute_url()
+        if source:
+            path += f"?utm_source={source}"
+        return request.build_absolute_uri(path) if request else path
+
+    def whatsapp_text(self, request=None):
+        from apps.core.models import DEFAULT_WHATSAPP_MESSAGE, SiteSettings
+
+        template = SiteSettings.load().whatsapp_message or DEFAULT_WHATSAPP_MESSAGE
+        price = self.display_price
+        if price:
+            price_text = "R$ " + f"{price:,.2f}".replace(",", "X").replace(".", ",").replace(
+                "X", "."
+            )
+        else:
+            price_text = "valor a consultar"
+        values = {
+            "codigo": self.code,
+            "titulo": self.title,
+            "bairro": self.neighborhood.name,
+            "preco": price_text,
+            "link": self.share_url(request, "whatsapp"),
+        }
+        return template.format_map(_SafeDict(values))
 
     @property
     def full_address(self):

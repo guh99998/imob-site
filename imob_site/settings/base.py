@@ -94,6 +94,13 @@ STORAGES = {
 # Módulos do painel ligados neste site (env FEATURES="brokers,partners,owners,searches").
 SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches"])
 
+# Crédito no rodapé do site (None desliga).
+DEVELOPER_CREDIT = {
+    "name": "Gustavo Lopes",
+    "instagram": "https://www.instagram.com/devlopes_guh/",
+    "github": "https://github.com/guh99998",
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 MAILERS = {
