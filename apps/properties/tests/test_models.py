@@ -49,8 +49,10 @@ def test_valid_both_purposes():
 def test_published_excludes_drafts():
     pub = PropertyFactory()
     PropertyFactory(status=Property.Status.DRAFT)
-    sold = PropertyFactory(status=Property.Status.SOLD)
-    assert set(Property.objects.published()) == {pub, sold}
+    reserved = PropertyFactory(status=Property.Status.RESERVED)
+    PropertyFactory(status=Property.Status.SOLD)
+    PropertyFactory(status=Property.Status.RENTED)
+    assert set(Property.objects.published()) == {pub, reserved}
     assert list(Property.objects.available()) == [pub]
 
 
@@ -130,4 +132,29 @@ def test_address_hidden_by_default():
 
 def test_default_categories_created_by_data_migration():
     names = list(Category.objects.values_list("name", flat=True))
-    assert names == ["Apartamento", "Casa", "Cobertura", "Terreno", "Comercial"]
+    assert names[:5] == ["Apartamento", "Casa", "Cobertura", "Terreno", "Comercial"]
+    assert {"Sobrado", "Studio/Kitnet", "Galpão", "Fazenda"} <= set(names)
+
+
+def test_featured_limit_enforced_in_clean():
+    from apps.core.models import SiteSettings
+
+    site = SiteSettings.load()
+    site.max_featured = 2
+    site.save()
+    PropertyFactory.create_batch(2, is_featured=True)
+    extra = PropertyFactory(is_featured=False)
+    extra.is_featured = True
+    with pytest.raises(ValidationError) as exc:
+        extra.clean()
+    assert "is_featured" in exc.value.message_dict
+    # quem já é destaque continua podendo ser editado
+    Property.objects.filter(is_featured=True).first().clean()
+
+
+def test_thumbnails_generated_as_webp():
+    prop = PropertyFactory()
+    photo = PropertyPhoto.objects.create(property=prop, image=make_image((2000, 1500)))
+    photo.refresh_from_db()
+    assert photo.thumb_sm.name.endswith(".webp") and photo.thumb_lg.name.endswith(".webp")
+    assert "640w" in photo.srcset and "1200w" in photo.srcset

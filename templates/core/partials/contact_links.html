@@ -1,0 +1,5 @@
+<ul class="space-y-3">
+  {% if site.whatsapp_digits %}<li><a class="btn" target="_blank" rel="noopener" href="https://wa.me/{{ site.whatsapp_digits }}?text={{ message|urlencode }}">{% include "partials/icon_whatsapp.html" %}Chamar no WhatsApp</a></li>{% endif %}
+  {% if site.phone %}<li>Telefone: <a class="underline" href="tel:{{ site.phone }}">{{ site.phone }}</a></li>{% endif %}
+  {% if site.email %}<li>E-mail: <a class="underline" href="mailto:{{ site.email }}">{{ site.email }}</a></li>{% endif %}
+</ul>

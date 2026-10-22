@@ -1,3 +1,4 @@
+from functools import cached_property
 from io import BytesIO
 
 from django.core.exceptions import ValidationError
@@ -111,10 +112,13 @@ class Feature(models.Model):
         return self.name
 
 
+PUBLIC_STATUSES = ("PUBLISHED", "RESERVED")
+
+
 class PropertyQuerySet(models.QuerySet):
     def published(self):
-        """Tudo que o público pode ver (inclui reservado/vendido/alugado), exceto rascunhos."""
-        return self.exclude(status=Property.Status.DRAFT).order_by("-published_at", "-id")
+        """O que o público vê: publicado e reservado (o resto fica só no painel)."""
+        return self.filter(status__in=PUBLIC_STATUSES).order_by("-published_at", "-id")
 
     def available(self):
         return self.filter(status=Property.Status.PUBLISHED)
@@ -243,6 +247,18 @@ class Property(models.Model):
             errors["sale_price"] = _("Informe o preço de venda.")
         if self.purpose in (self.Purpose.RENT, self.Purpose.BOTH) and not self.rent_price:
             errors["rent_price"] = _("Informe o valor do aluguel.")
+        if self.is_featured and self.status in PUBLIC_STATUSES:
+            from apps.core.models import SiteSettings
+
+            limit = SiteSettings.load().max_featured
+            others = Property.objects.filter(is_featured=True, status__in=PUBLIC_STATUSES)
+            if self.pk:
+                others = others.exclude(pk=self.pk)
+            if others.count() >= limit:
+                errors["is_featured"] = _(
+                    "Já existem %(n)d imóveis em destaque (limite das configurações). "
+                    "Tire o destaque de outro imóvel primeiro."
+                ) % {"n": limit}
         if errors:
             raise ValidationError(errors)
 
@@ -290,6 +306,8 @@ class PropertyPhoto(models.Model):
         Property, on_delete=models.CASCADE, related_name="photos", verbose_name=_("imóvel")
     )
     image = models.ImageField(_("imagem"), upload_to="properties/%Y/%m/")
+    thumb_sm = models.ImageField(upload_to="properties/thumbs/", blank=True, editable=False)
+    thumb_lg = models.ImageField(upload_to="properties/thumbs/", blank=True, editable=False)
     caption = models.CharField(_("legenda"), max_length=150, blank=True)
     order = models.PositiveSmallIntegerField(_("ordem"), default=0)
     is_cover = models.BooleanField(_("capa"), default=False)
@@ -305,11 +323,49 @@ class PropertyPhoto(models.Model):
     def save(self, *args, **kwargs):
         if self.image and not self.image._committed:
             self._resize_image()
+        new_image = bool(self.image) and not self.image._committed
         super().save(*args, **kwargs)
+        if new_image or (self.image and not self.thumb_sm):
+            self._make_thumbs()
         if self.is_cover:
             PropertyPhoto.objects.filter(property=self.property).exclude(pk=self.pk).update(
                 is_cover=False
             )
+
+    def _make_thumbs(self):
+        """Miniaturas WebP (640 e 1200 px). Se falhar, o site usa a imagem original."""
+        try:
+            with self.image.open("rb") as fh:
+                base = ImageOps.exif_transpose(Image.open(fh))
+                base.load()
+            if base.mode not in ("RGB", "L"):
+                base = base.convert("RGB")
+            stem = self.image.name.rsplit("/", 1)[-1].rsplit(".", 1)[0]
+            for field, width in (("thumb_sm", 640), ("thumb_lg", 1200)):
+                img = base.copy()
+                img.thumbnail((width, width * 3 // 4 + 400))
+                buf = BytesIO()
+                img.save(buf, format="WEBP", quality=80)
+                getattr(self, field).save(
+                    f"{stem}-{width}.webp", ContentFile(buf.getvalue()), save=False
+                )
+            super().save(update_fields=["thumb_sm", "thumb_lg"])
+        except Exception:  # noqa: BLE001 - miniatura é otimização, nunca bloqueia o upload
+            return
+
+    @cached_property
+    def src_sm(self):
+        return (self.thumb_sm or self.image).url
+
+    @cached_property
+    def src_lg(self):
+        return (self.thumb_lg or self.image).url
+
+    @cached_property
+    def srcset(self):
+        if self.thumb_sm and self.thumb_lg:
+            return f"{self.thumb_sm.url} 640w, {self.thumb_lg.url} 1200w"
+        return ""
 
     def _resize_image(self):
         img = ImageOps.exif_transpose(Image.open(self.image))

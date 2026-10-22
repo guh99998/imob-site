@@ -1,16 +1,21 @@
 from django.db.models import Count, Q
 from django.shortcuts import render
 
-from apps.properties.models import Category, City, Neighborhood, Property
+from apps.properties.filters import grouped_categories
+from apps.properties.models import PUBLIC_STATUSES, Category, City, Neighborhood, Property
 
-PUBLIC = ~Q(properties__status=Property.Status.DRAFT)
+from . import seo
+from .models import SiteSettings
+
+PUBLIC = Q(properties__status__in=PUBLIC_STATUSES)
 
 
 def home(request):
+    site = SiteSettings.load()
     qs = (
         Property.objects.published().select_related("neighborhood__city").prefetch_related("photos")
     )
-    featured = list(qs.filter(is_featured=True)[:6])
+    featured = list(qs.filter(is_featured=True)[: site.max_featured])
     categories = list(
         Category.objects.annotate(total=Count("properties", filter=PUBLIC))
         .filter(total__gt=0)
@@ -21,7 +26,7 @@ def home(request):
     cities = City.objects.annotate(
         total=Count(
             "neighborhoods__properties",
-            filter=~Q(neighborhoods__properties__status=Property.Status.DRAFT),
+            filter=Q(neighborhoods__properties__status__in=PUBLIC_STATUSES),
         )
     ).filter(total__gt=0)
     neighborhoods = (
@@ -34,13 +39,26 @@ def home(request):
         request,
         "core/home.html",
         {
+            "jsonld": seo.agency(request, site),
             "featured": featured,
-            "highlights": list(featured[:3]) or list(qs[:3]),
+            "highlights": featured[:3] or list(qs[:3]),
             "recent": qs[:6],
             "categories": categories,
-            "category_choices": Category.objects.all(),
+            "category_groups": grouped_categories(),
             "city_choices": City.objects.all(),
             "cities": cities,
             "neighborhoods": neighborhoods,
         },
     )
+
+
+def advertise(request):
+    return render(request, "core/advertise.html")
+
+
+def contact(request):
+    return render(request, "core/contact.html")
+
+
+def privacy(request):
+    return render(request, "core/privacy.html")

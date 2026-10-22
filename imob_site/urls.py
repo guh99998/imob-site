@@ -4,9 +4,9 @@ from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 
-from apps.properties.sitemaps import PropertySitemap, StaticSitemap
+from apps.properties.sitemaps import LandingSitemap, PropertySitemap, StaticSitemap
 
-sitemaps = {"static": StaticSitemap, "properties": PropertySitemap}
+sitemaps = {"static": StaticSitemap, "landings": LandingSitemap, "properties": PropertySitemap}
 
 
 urlpatterns = [

@@ -24,6 +24,7 @@ dev = [
     "factory-boy",
     "ruff",
     "django-debug-toolbar",
+    "playwright>=1.64.1",
 ]
 
 [tool.uv]

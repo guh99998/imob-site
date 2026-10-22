@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Política de privacidade — {{ site.name }}{% endblock %}
+{% block meta_description %}Como a {{ site.name }} trata os dados pessoais, conforme a LGPD.{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl md:text-5xl">Política de privacidade</h1>
+<div class="mt-6 max-w-prose space-y-4">
+  <p>Esta política explica como a {{ site.name }} trata seus dados pessoais, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018).</p>
+  <h2 class="font-display text-2xl pt-4">Quais dados coletamos</h2>
+  <p>Apenas os que você informa nos formulários de contato: nome, e-mail, telefone e mensagem. Também usamos dados técnicos de navegação (como endereço IP) para segurança e prevenção de spam.</p>
+  <h2 class="font-display text-2xl pt-4">Para que usamos</h2>
+  <p>Para responder ao seu contato sobre um imóvel e, se você pedir, apresentar imóveis compatíveis com o que procura. Não vendemos seus dados.</p>
+  <h2 class="font-display text-2xl pt-4">Compartilhamento e guarda</h2>
+  <p>Seus dados são vistos apenas pela equipe da imobiliária e mantidos pelo tempo necessário ao atendimento e a obrigações legais.</p>
+  <h2 class="font-display text-2xl pt-4">Seus direitos</h2>
+  <p>Você pode pedir acesso, correção ou exclusão dos seus dados a qualquer momento{% if site.email %}: <a class="underline" href="mailto:{{ site.email }}">{{ site.email }}</a>{% endif %}.</p>
+</div>
+{% endblock %}

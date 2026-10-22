@@ -139,3 +139,78 @@ def test_active_filter_chips_have_removal_urls(client):
     r = client.get(reverse("properties:list"), {"purpose": "RENT", "bedrooms": 2})
     chips = {c["label"]: c["url"] for c in r.context["chips"]}
     assert chips["Finalidade: Aluguel"] == "?bedrooms=2"
+
+
+def test_sold_and_rented_hidden_everywhere(client):
+    sold = PropertyFactory(status=Property.Status.SOLD)
+    rented = PropertyFactory(status=Property.Status.RENTED)
+    reserved = PropertyFactory(status=Property.Status.RESERVED)
+    r = client.get(reverse("properties:list"))
+    assert reserved.slug in slugs(r)
+    assert sold.slug not in slugs(r) and rented.slug not in slugs(r)
+    assert client.get(sold.get_absolute_url()).status_code == 404
+    xml = client.get("/sitemap.xml").content.decode()
+    assert reserved.slug in xml and sold.slug not in xml and rented.slug not in xml
+
+
+def test_landing_pages(client):
+    from apps.properties.tests.factories import NeighborhoodFactory
+
+    house = Category.objects.get(slug="casa")
+    nb = NeighborhoodFactory()
+    match = PropertyFactory(category=house, purpose="SALE", neighborhood=nb)
+    other = PropertyFactory(category=house, purpose="RENT", sale_price=None, rent_price=900)
+    r = client.get(reverse("core:landing", args=["comprar", "casa"]))
+    assert r.status_code == 200
+    assert match.slug in slugs(r) and other.slug not in slugs(r)
+    html = r.content.decode()
+    assert "<h1" in html and "Casa à venda" in html
+    assert 'content="index, follow"' in html
+    r = client.get(reverse("core:landing_city", args=["comprar", "casa", nb.city.slug]))
+    assert slugs(r) == {match.slug}
+    assert client.get("/comprar/inexistente/").status_code == 404
+
+
+def test_filtered_and_paginated_lists_are_noindex(client):
+    PropertyFactory()
+    assert 'content="index, follow"' in client.get(reverse("properties:list")).content.decode()
+    html = client.get(reverse("properties:list") + "?bedrooms=2").content.decode()
+    assert 'content="noindex, follow"' in html
+
+
+def test_detail_jsonld_has_no_internal_data(client):
+    prop = PropertyFactory(description="Casa linda")
+    html = client.get(prop.get_absolute_url()).content.decode()
+    assert "application/ld+json" in html and "RealEstateListing" in html
+    assert "BreadcrumbList" in html
+    for forbidden in ("created_by", "updated_by", "owner", "broker", "partner"):
+        assert forbidden not in html
+
+
+def test_home_hero_has_no_pause_button_and_has_jsonld(client):
+    html = client.get("/").content.decode()
+    assert "Pausar" not in html and "hero-toggle" not in html
+    assert "RealEstateAgent" in html
+
+
+def test_home_featured_respects_limit(client):
+    from apps.core.models import SiteSettings
+
+    site = SiteSettings.load()
+    site.max_featured = 2
+    site.save()
+    PropertyFactory.create_batch(4, is_featured=True)
+    assert len(client.get("/").context["featured"]) == 2
+
+
+def test_institutional_pages_and_footer_links(client):
+    PropertyFactory(category=Category.objects.get(slug="casa"))
+    for url in ("/anuncie/", "/contato/", "/politica-de-privacidade/"):
+        assert client.get(url).status_code == 200
+    html = client.get("/").content.decode()
+    assert "/comprar/casa/" in html and "/alugar/casa/" in html
+
+
+def test_category_filter_is_grouped(client):
+    html = client.get(reverse("properties:list")).content.decode()
+    assert "<optgroup" in html and 'label="Residencial"' in html

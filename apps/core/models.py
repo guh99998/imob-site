@@ -17,6 +17,21 @@ class SiteSettings(models.Model):
     address = models.CharField(_("endereço"), max_length=255, blank=True)
     instagram = models.URLField(_("Instagram"), blank=True)
     facebook = models.URLField(_("Facebook"), blank=True)
+    logo = models.ImageField(_("logo"), upload_to="site/", blank=True)
+    creci = models.CharField(_("CRECI"), max_length=30, blank=True)
+    cnpj = models.CharField(_("CNPJ"), max_length=18, blank=True)
+    about = models.TextField(_("sobre a imobiliária"), blank=True, max_length=500)
+    meta_description = models.CharField(
+        _("descrição para buscadores"),
+        max_length=160,
+        blank=True,
+        help_text=_("Resumo que aparece nos resultados do Google (até 160 caracteres)."),
+    )
+    max_featured = models.PositiveSmallIntegerField(
+        _("máximo de destaques"),
+        default=6,
+        help_text=_("Quantos imóveis podem ficar em destaque ao mesmo tempo."),
+    )
 
     class Meta:
         verbose_name = _("configurações do site")

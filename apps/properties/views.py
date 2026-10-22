@@ -2,10 +2,11 @@ from django.core.paginator import Paginator
 from django.db.models import Case, IntegerField, Q, When
 from django.shortcuts import get_object_or_404, render
 
+from apps.core import seo
 from apps.leads.forms import LeadForm
 
 from .filters import PropertyFilter
-from .models import Property
+from .models import Category, City, Property
 
 
 def _base_qs():
@@ -34,8 +35,14 @@ def _active_filters(f, request):
     return chips
 
 
-def property_list(request):
-    f = PropertyFilter(request.GET or None, queryset=_base_qs())
+def property_list(request, landing=None):
+    data = request.GET.copy()
+    if landing:
+        data["purpose"] = landing["purpose"]
+        data["category"] = landing["category"].slug
+        if landing.get("city"):
+            data["city"] = str(landing["city"].pk)
+    f = PropertyFilter(data or None, queryset=_base_qs())
     page = Paginator(f.qs, 12).get_page(request.GET.get("page"))
     params = request.GET.copy()
     params.pop("page", None)
@@ -44,9 +51,27 @@ def property_list(request):
         "page": page,
         "querystring": params.urlencode(),
         "chips": _active_filters(f, request),
+        "landing": landing,
+        # Só a lista "limpa" e as landings sem filtros extras são indexáveis.
+        "noindex": bool(request.GET),
     }
     template = "properties/partials/results.html" if request.htmx else "properties/list.html"
     return render(request, template, ctx)
+
+
+def landing(request, kind, category, city=None):
+    cat = get_object_or_404(Category, slug=category)
+    city_obj = get_object_or_404(City, slug=city) if city else None
+    purpose = Property.Purpose.SALE if kind == "comprar" else Property.Purpose.RENT
+    info = {
+        "purpose": purpose,
+        "category": cat,
+        "city": city_obj,
+        "verb": "à venda" if kind == "comprar" else "para alugar",
+    }
+    where = f" em {city_obj.name}/{city_obj.state}" if city_obj else ""
+    info["title"] = f"{cat.name} {info['verb']}{where}"
+    return property_list(request, landing=info)
 
 
 def property_detail(request, slug):
@@ -62,13 +87,18 @@ def property_detail(request, slug):
         )
         .order_by("same_category", "-published_at")[:3]
     )
+    photos = list(prop.photos.all())
     return render(
         request,
         "properties/detail.html",
         {
             "property": prop,
             "form": LeadForm(),
-            "photos": list(prop.photos.all()),
+            "photos": photos,
+            "gallery": seo.dumps(
+                [{"src": ph.src_lg, "alt": ph.caption or prop.title} for ph in photos]
+            ),
+            "jsonld": seo.listing(request, prop, photos),
             "similar": similar,
         },
     )

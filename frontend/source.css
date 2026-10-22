@@ -15,10 +15,18 @@
   --color-alerta: #a4442f;
   --color-linha: #c5ccc6;
 
-  --font-display: "Gloock", Georgia, serif;
-  --font-sans: "Schibsted Grotesk", system-ui, sans-serif;
+  --font-display: "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
 
   --radius-ctl: 4px;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("/static/fonts/inter-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
 }
 
 @layer base {
@@ -31,7 +39,8 @@
     line-height: 1.6;
   }
   :focus-visible { outline: 3px solid var(--color-latao); outline-offset: 2px; }
-  h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.1; text-wrap: balance; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.15; letter-spacing: -0.015em; text-wrap: balance; }
+  html, body { overflow-x: clip; }
   img { display: block; }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -60,7 +69,7 @@
   /* A "ficha": carimbo de planta com a metragem em destaque e cotas em grade */
   .ficha { display: grid; grid-template-columns: auto 1fr; border: 1px solid var(--color-petroleo); background: var(--color-papel); }
   .ficha-area { padding: .6rem .9rem; border-right: 1px solid var(--color-petroleo); display: flex; align-items: baseline; gap: .2rem; }
-  .ficha-area strong { font-family: var(--font-display); font-weight: 400; font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ficha-area strong { font-weight: 600; font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
   .ficha-area span { font-size: .8rem; }
   .ficha-cotas { display: grid; grid-template-columns: repeat(3, 1fr); }
   .ficha-cotas > div { padding: .4rem .6rem; border-right: 1px solid var(--color-linha); display: flex; flex-direction: column-reverse; justify-content: center; }
@@ -71,6 +80,20 @@
   .ficha-lg .ficha-area, .ficha-lg .ficha-cotas > div { padding: .9rem 1.1rem; }
   .ficha-lg .ficha-cotas b { font-size: 1.6rem; }
   .ficha-lg .ficha-cotas small { font-size: .8rem; }
+
+  /* Hero: sem controle de pausa; quem prefere menos movimento vê só o poster */
+  @media (prefers-reduced-motion: reduce) { .hero-video { display: none; } }
+
+  .font-display { font-weight: 600; letter-spacing: -0.015em; }
+
+  /* Card: altura uniforme */
+  .card { display: flex; flex-direction: column; height: 100%; }
+  .card-title { min-height: 2.6em; }
+
+  /* Galeria mobile: carrossel com snap */
+  .gallery-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; gap: .5rem; }
+  .gallery-track::-webkit-scrollbar { display: none; }
+  .gallery-track > a { flex: 0 0 100%; scroll-snap-align: center; }
 
   .reveal { animation: reveal .9s cubic-bezier(.2, .7, .2, 1) both; }
   @keyframes reveal { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }

@@ -104,10 +104,17 @@ class Command(BaseCommand):
         if site.name in ("Imobiliária", ""):
             site.name = "DevLopesMóveis"
             site.phone = site.phone or "(11) 4000-1234"
-            site.whatsapp = site.whatsapp or "5511940001234"
             site.email = site.email or "contato@devlopesmoveis.example"
             site.address = site.address or "Rua das Palmeiras, 120 — Vila Serena/SP"
-            site.save()
+            site.creci = site.creci or "00000-J"
+            site.cnpj = site.cnpj or "00.000.000/0001-00"
+            site.about = (
+                site.about or "Imobiliária de exemplo: casas e apartamentos com fotos de verdade."
+            )
+        # Número fictício óbvio; substitui o antigo número de exemplo.
+        if site.whatsapp in ("", "5511940001234"):
+            site.whatsapp = "5511900000000"
+        site.save()
 
         categories = {
             name: Category.objects.get_or_create(name=name, defaults={"order": i})[0]

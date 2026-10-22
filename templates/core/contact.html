@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Contato — {{ site.name }}{% endblock %}
+{% block meta_description %}Fale com a {{ site.name }} por WhatsApp, telefone ou e-mail.{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl md:text-5xl">Contato</h1>
+<div class="mt-6 max-w-prose space-y-4">
+  <p>Estamos prontos para ajudar você a comprar, vender ou alugar.</p>
+  {% include "core/partials/contact_links.html" with message="Olá, gostaria de falar com um corretor." %}
+  {% if site.address %}<p><strong>Endereço:</strong> {{ site.address }}</p>{% endif %}
+</div>
+{% endblock %}

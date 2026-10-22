@@ -1,9 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Imóveis para venda e aluguel — {{ site.name }}{% endblock %}
-{% block meta_description %}Veja todos os imóveis para venda e aluguel da {{ site.name }}.{% endblock %}
+{% block title %}{% if landing %}{{ landing.title }} — {{ site.name }}{% else %}Imóveis para venda e aluguel — {{ site.name }}{% endif %}{% endblock %}
+{% block meta_description %}{% if landing %}{{ landing.title }}: veja fotos, preços e detalhes na {{ site.name }}.{% else %}Veja todos os imóveis para venda e aluguel da {{ site.name }}.{% endif %}{% endblock %}
+{% block robots %}{% if noindex %}noindex, follow{% else %}index, follow{% endif %}{% endblock %}
 
 {% block content %}
-<h1 class="font-display text-4xl md:text-5xl">Imóveis para<br>comprar e alugar</h1>
+<h1 class="font-display text-3xl md:text-5xl">{% if landing %}{{ landing.title }}{% else %}Imóveis para comprar e alugar{% endif %}</h1>
 <div class="mt-10 grid gap-10 lg:grid-cols-[17rem_1fr]">
   <details id="filtros" open class="lg:self-start border border-linha bg-papel">
     <summary class="lg:hidden cursor-pointer px-4 py-3 font-semibold">Filtros</summary>

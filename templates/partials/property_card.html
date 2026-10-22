@@ -1,21 +1,17 @@
 {% load humanize %}
-<article class="group relative flex flex-col">
-  <a href="{{ p.get_absolute_url }}" class="block after:absolute after:inset-0">
+<article class="card group relative">
+  <a href="{{ p.get_absolute_url }}" class="flex flex-col flex-1 after:absolute after:inset-0">
     <div class="cover relative aspect-[4/3] bg-linha overflow-hidden">
       {% with cover=p.cover %}
-        {% if cover %}<img src="{{ cover.image.url }}" alt="{{ cover.caption|default:p.title }}" loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]">{% endif %}
+        {% if cover %}<img src="{{ cover.src_sm }}" {% if cover.srcset %}srcset="{{ cover.srcset }}" sizes="(min-width:1280px) 400px, (min-width:640px) 45vw, 100vw"{% endif %} alt="{{ cover.caption|default:p.title }}" width="640" height="480" loading="lazy" decoding="async" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]">{% endif %}
       {% endwith %}
       <span class="absolute top-0 left-0 bg-petroleo text-papel text-sm font-medium px-3 py-1">{{ p.get_purpose_display }}</span>
-      {% if not p.is_available %}
-        <span class="absolute top-0 right-0 bg-alerta text-papel text-sm font-medium px-3 py-1">{{ p.get_status_display }}</span>
-      {% endif %}
+      {% if p.status == "RESERVED" %}<span class="absolute top-0 right-0 bg-alerta text-papel text-sm font-medium px-3 py-1">Reservado</span>{% endif %}
     </div>
-    <div class="pt-4">
+    <div class="pt-4 flex-1">
       <p class="text-sm text-musgo font-medium">{{ p.category.name }} em {{ p.neighborhood.name }}, {{ p.neighborhood.city.name }}</p>
-      <h3 class="font-display text-2xl mt-1 line-clamp-2 group-hover:underline decoration-latao decoration-2 underline-offset-4">{{ p.title }}</h3>
-      {% if p.display_price %}
-        <p class="font-display text-2xl mt-2 text-latao-escuro tabular-nums">R$ {{ p.display_price|intcomma }}{% if p.purpose == "RENT" %}<span class="font-sans text-sm text-petroleo"> /mês</span>{% endif %}</p>
-      {% endif %}
+      <h3 class="card-title font-display text-xl mt-1 line-clamp-2 group-hover:underline decoration-latao decoration-2 underline-offset-4">{{ p.title }}</h3>
+      <p class="font-display text-xl mt-2 text-latao-escuro tabular-nums min-h-[1.75rem]">{% if p.display_price %}R$ {{ p.display_price|intcomma }}{% if p.purpose == "RENT" %}<span class="font-sans font-normal text-sm text-petroleo"> /mês</span>{% endif %}{% endif %}</p>
     </div>
   </a>
   <div class="mt-3">{% include "partials/property_sheet.html" %}</div>

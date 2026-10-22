@@ -1,13 +1,24 @@
 from django.contrib import admin, messages
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
 
-from .models import Category, City, Feature, Neighborhood, Property, PropertyPhoto
+from apps.core.models import SiteSettings
+
+from .models import (
+    PUBLIC_STATUSES,
+    Category,
+    City,
+    Feature,
+    Neighborhood,
+    Property,
+    PropertyPhoto,
+)
 
 STATUS_LABELS = {
     Property.Status.DRAFT: "warning",
@@ -187,7 +198,11 @@ class PropertyAdmin(ModelAdmin):
 
     @action(description=_("Ver no site"), url_path="ver-no-site")
     def view_on_site_action(self, request, object_id):
-        return redirect(get_object_or_404(Property, pk=object_id).get_absolute_url())
+        prop = get_object_or_404(Property, pk=object_id)
+        if prop.status not in PUBLIC_STATUSES:
+            self.message_user(request, _("Este imóvel não está visível no site."), messages.WARNING)
+            return redirect(reverse("admin:properties_property_change", args=[prop.pk]))
+        return redirect(prop.get_absolute_url())
 
     @admin.action(description=_("Publicar selecionados"))
     def publish(self, request, queryset):
@@ -205,4 +220,18 @@ class PropertyAdmin(ModelAdmin):
 
     @admin.action(description=_("Destacar selecionados"))
     def feature(self, request, queryset):
+        limit = SiteSettings.load().max_featured
+        current = Property.objects.filter(is_featured=True, status__in=PUBLIC_STATUSES).count()
+        to_add = queryset.filter(is_featured=False, status__in=PUBLIC_STATUSES).count()
+        if current + to_add > limit:
+            self.message_user(
+                request,
+                _(
+                    "Limite de %(limit)d destaques. Hoje há %(current)d; tire o destaque de "
+                    "algum imóvel antes (ou aumente o limite em Configurações)."
+                )
+                % {"limit": limit, "current": current},
+                messages.ERROR,
+            )
+            return
         queryset.update(is_featured=True)

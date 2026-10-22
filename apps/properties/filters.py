@@ -11,6 +11,39 @@ ORDERING_CHOICES = [
 ]
 
 
+CATEGORY_GROUPS = [
+    (
+        "Residencial",
+        [
+            "apartamento",
+            "casa",
+            "sobrado",
+            "casa-de-condominio",
+            "cobertura",
+            "studio-kitnet",
+            "flat",
+        ],
+    ),
+    ("Terrenos e rurais", ["terreno", "terreno-em-condominio", "chacara-sitio", "fazenda"]),
+    ("Comercial", ["comercial", "sala-comercial", "loja", "galpao"]),
+]
+
+
+def grouped_categories():
+    """[(rótulo, [categorias])] — categorias fora dos grupos conhecidos vão para "Outras"."""
+    cats = list(Category.objects.all())
+    used, groups = set(), []
+    for label, slugs in CATEGORY_GROUPS:
+        items = [c for c in cats if c.slug in slugs]
+        used.update(c.pk for c in items)
+        if items:
+            groups.append((label, items))
+    rest = [c for c in cats if c.pk not in used]
+    if rest:
+        groups.append(("Outras", rest))
+    return groups
+
+
 class PropertyFilter(filters.FilterSet):
     purpose = filters.ChoiceFilter(
         label="Finalidade",
@@ -57,6 +90,9 @@ class PropertyFilter(filters.FilterSet):
 
     def __init__(self, data=None, queryset=None, **kwargs):
         super().__init__(data, queryset, **kwargs)
+        self.form.fields["category"].widget.choices = [("", "Todas")] + [
+            (label, [(c.slug, c.name) for c in items]) for label, items in grouped_categories()
+        ]
         for field in self.form.fields.values():
             if isinstance(field.widget, (forms.Select, forms.NumberInput)):
                 field.widget.attrs.setdefault("class", "field")
