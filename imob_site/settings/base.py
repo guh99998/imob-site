@@ -228,6 +228,13 @@ UNFOLD = {
                         "badge": "apps.core.admin_navigation.new_leads_badge",
                         "permission": "apps.core.admin_navigation.can_view_lead",
                     },
+                    {
+                        "title": _("Procuras de clientes"),
+                        "icon": "person_search",
+                        "link": reverse_lazy("admin:leads_propertysearch_changelist"),
+                        "badge": "apps.core.admin_navigation.new_searches_badge",
+                        "permission": "apps.core.admin_navigation.can_view_search",
+                    },
                 ],
             },
             {

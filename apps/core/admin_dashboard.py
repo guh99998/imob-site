@@ -16,6 +16,17 @@ def _recent_activity(request):
     return list(LogEntry.objects.select_related("user", "content_type")[:8])
 
 
+def searches_number():
+    from apps.leads.models import PropertySearch
+
+    from .features import enabled
+
+    if not enabled("searches"):
+        return []
+    count = PropertySearch.objects.filter(status=PropertySearch.Status.NEW).count()
+    return [{"label": _("Procuras novas"), "value": count}]
+
+
 def dashboard_callback(request, context):
     """Contexto da página inicial do admin (templates/admin/index.html)."""
     from apps.people.scoping import is_scoped, own_properties_q
@@ -63,6 +74,7 @@ def dashboard_callback(request, context):
                 },
                 {"label": _("Vendidos/alugados no mês"), "value": month_closed},
                 {"label": _("Mensagens novas"), "value": new_leads},
+                *searches_number(),
             ],
             "recent_properties": properties.select_related("category")
             .prefetch_related("photos")

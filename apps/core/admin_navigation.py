@@ -32,6 +32,7 @@ def _feature_perm(feature, codename):
 can_view_broker = _feature_perm("brokers", "people.view_broker")
 can_view_partner = _feature_perm("partners", "people.view_partner")
 can_view_owner = _feature_perm("owners", "people.view_owner")
+can_view_search = _feature_perm("searches", "leads.view_propertysearch")
 
 
 def can_view_user(request):
@@ -70,4 +71,11 @@ def new_leads_badge(request):
     from apps.leads.models import Lead
 
     count = Lead.objects.filter(status=Lead.Status.NEW).count()
+    return count or None
+
+
+def new_searches_badge(request):
+    from apps.leads.models import PropertySearch
+
+    count = PropertySearch.objects.filter(status=PropertySearch.Status.NEW).count()
     return count or None

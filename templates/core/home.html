@@ -31,6 +31,7 @@
         <select id="h-bed" name="bedrooms" class="field"><option value="">Todos</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+</option></select></div>
       <button class="btn">Buscar imóveis</button>
     </form>
+    {% if features.searches %}<p class="mt-4 text-papel/90">Não achou? <a class="underline underline-offset-4 hover:text-latao" href="{% url 'leads:search' %}">Conte o que você procura</a>.</p>{% endif %}
   </div>
 </section>
 

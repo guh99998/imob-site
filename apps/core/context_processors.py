@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from apps.properties.models import PUBLIC_STATUSES, Category, City
 
+from .features import enabled
 from .models import SiteSettings
 
 CACHE_SECONDS = 120
@@ -37,6 +38,7 @@ def _footer_links():
 def site_settings(request):
     return {
         "site": SiteSettings.load(),
+        "features": {"searches": enabled("searches")},
         "nav_items": [
             {"label": "Comprar", "url": reverse("properties:list") + "?purpose=SALE"},
             {"label": "Alugar", "url": reverse("properties:list") + "?purpose=RENT"},

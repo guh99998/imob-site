@@ -1,0 +1,50 @@
+{% load static %}
+<div id="search-box">
+  {% if sent %}
+    <div class="bg-papel border border-petroleo p-6 max-w-xl" role="status">
+      <h2 class="font-display text-2xl mb-2">Recebemos seu pedido</h2>
+      <p>Um corretor vai procurar imóveis com o seu perfil e chamar você no WhatsApp.</p>
+      <p class="mt-4"><a class="btn btn-dark" href="{% url 'properties:list' %}">Ver imóveis enquanto isso</a></p>
+    </div>
+  {% else %}
+  <form method="post" action="{% url 'leads:search' %}" hx-post="{% url 'leads:search' %}" hx-target="#search-box" hx-swap="outerHTML"
+        class="grid gap-4 max-w-2xl">
+    {% csrf_token %}
+    {% for e in form.non_field_errors %}<p class="text-alerta text-sm" role="alert">{{ e }}</p>{% endfor %}
+    <div style="position:absolute;left:-9999px" aria-hidden="true">{{ form.website }}</div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div><label class="field-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>{{ form.name }}{% for e in form.name.errors %}<p class="text-alerta text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div><label class="field-label" for="{{ form.whatsapp.id_for_label }}">{{ form.whatsapp.label }}</label>{{ form.whatsapp }}{% for e in form.whatsapp.errors %}<p class="text-alerta text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div><label class="field-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>{{ form.email }}{% for e in form.email.errors %}<p class="text-alerta text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div><label class="field-label" for="{{ form.purpose.id_for_label }}">{{ form.purpose.label }}</label>{{ form.purpose }}</div>
+    </div>
+
+    <fieldset>
+      <legend class="field-label">{{ form.categories.label }}</legend>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm">
+        {% for choice in form.categories %}<label class="flex items-center gap-2">{{ choice.tag }} {{ choice.choice_label }}</label>{% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div><label class="field-label" for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>{{ form.city }}</div>
+      <div><label class="field-label" for="{{ form.neighborhoods.id_for_label }}">{{ form.neighborhoods.label }}</label>{{ form.neighborhoods }}</div>
+      <div><label class="field-label" for="{{ form.min_price.id_for_label }}">{{ form.min_price.label }}</label>{{ form.min_price }}{% for e in form.min_price.errors %}<p class="text-alerta text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div><label class="field-label" for="{{ form.max_price.id_for_label }}">{{ form.max_price.label }}</label>{{ form.max_price }}{% for e in form.max_price.errors %}<p class="text-alerta text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div><label class="field-label" for="{{ form.min_bedrooms.id_for_label }}">{{ form.min_bedrooms.label }}</label>{{ form.min_bedrooms }}</div>
+      <div><label class="field-label" for="{{ form.min_parking.id_for_label }}">{{ form.min_parking.label }}</label>{{ form.min_parking }}</div>
+    </div>
+
+    <div><label class="field-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>{{ form.notes }}</div>
+
+    <div>
+      <label class="flex items-start gap-2 text-sm">{{ form.lgpd_consent }} <span>{{ form.lgpd_consent.label }} <a class="underline" href="{% url 'core:privacy' %}">Política de privacidade</a></span></label>
+      {% for e in form.lgpd_consent.errors %}<p class="text-alerta text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-dark w-full sm:w-auto">Enviar pedido</button>
+  </form>
+  <script src="{% static 'core/admin/masks.js' %}"></script>
+  {% endif %}
+</div>

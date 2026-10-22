@@ -1,6 +1,9 @@
 from django.db.models import Count, Q
 from django.shortcuts import render
+from django.urls import reverse
 
+from apps.leads.models import Lead
+from apps.leads.views import lead_page
 from apps.properties.filters import grouped_categories
 from apps.properties.models import PUBLIC_STATUSES, Category, City, Neighborhood, Property
 
@@ -53,11 +56,11 @@ def home(request):
 
 
 def advertise(request):
-    return render(request, "core/advertise.html")
+    return lead_page(request, Lead.Kind.LISTING, "core/advertise.html", reverse("core:advertise"))
 
 
 def contact(request):
-    return render(request, "core/contact.html")
+    return lead_page(request, Lead.Kind.CONTACT, "core/contact.html", reverse("core:contact"))
 
 
 def privacy(request):

@@ -81,6 +81,7 @@
       </nav>
       <div class="lg:col-span-2 space-y-1.5">
         <h2 class="text-papel text-base mb-3">Institucional</h2>
+        {% if features.searches %}<p><a class="hover:underline" href="{% url 'leads:search' %}">Procuro um imóvel</a></p>{% endif %}
         <p><a class="hover:underline" href="{% url 'core:advertise' %}">Anuncie seu imóvel</a></p>
         <p><a class="hover:underline" href="{% url 'core:contact' %}">Contato</a></p>
         <p><a class="hover:underline" href="{% url 'core:privacy' %}">Política de privacidade</a></p>

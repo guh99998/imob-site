@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Procuro um imóvel — {{ site.name }}{% endblock %}
+{% block meta_description %}Conte o que você procura e a {{ site.name }} encontra imóveis com o seu perfil.{% endblock %}
+{% block content %}
+<h1 class="font-display text-3xl md:text-5xl">Procuro um imóvel</h1>
+<p class="mt-4 mb-8 max-w-prose">Não achou o que queria? Conte o que você procura: um corretor busca no nosso estoque e na rede de parceiros e chama você no WhatsApp.</p>
+{% include "leads/partials/search_box.html" %}
+{% endblock %}

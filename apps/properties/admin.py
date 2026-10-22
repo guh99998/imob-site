@@ -277,6 +277,22 @@ class PropertyAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
             )
         return "-"
 
+    SEARCH_LOOKUPS = {
+        "purpose__in",
+        "category__id__in",
+        "neighborhood__city__id__exact",
+        "sale_price__gte",
+        "sale_price__lte",
+        "rent_price__gte",
+        "rent_price__lte",
+        "bedrooms__gte",
+        "parking_spaces__gte",
+    }
+
+    def lookup_allowed(self, lookup, value, request):
+        """Permite os filtros de "Ver imóveis compatíveis" (procuras de clientes)."""
+        return lookup in self.SEARCH_LOOKUPS or super().lookup_allowed(lookup, value, request)
+
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("photos")
 

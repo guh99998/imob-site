@@ -47,9 +47,20 @@ def _permissions_for(role):
                 "add_partner",
                 "change_partner",
                 "view_broker",
+                "view_propertysearch",
+                "change_propertysearch",
             )
         ).distinct()
-    return (lookups | _perms("view_lead", "change_lead", "view_broker")).distinct()
+    return (
+        lookups
+        | _perms(
+            "view_lead",
+            "change_lead",
+            "view_broker",
+            "view_propertysearch",
+            "change_propertysearch",
+        )
+    ).distinct()
 
 
 def ensure_roles():
