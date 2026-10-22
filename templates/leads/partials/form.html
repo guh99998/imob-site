@@ -1,0 +1,17 @@
+<form method="post" action="{% url 'leads:create' property.slug %}"
+      hx-post="{% url 'leads:create' property.slug %}" hx-target="#lead-box" hx-swap="innerHTML"
+      class="space-y-3">
+  {% csrf_token %}
+  {% for e in form.non_field_errors %}<p class="text-alerta text-sm" role="alert">{{ e }}</p>{% endfor %}
+  <div style="position:absolute;left:-9999px" aria-hidden="true">{{ form.website }}</div>
+  {% for field in form.visible_fields %}
+    {% if field.name != "website" %}
+    <div>
+      <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }}</label>
+      {{ field }}
+      {% for e in field.errors %}<p class="text-alerta text-sm mt-1" role="alert">{{ e }}</p>{% endfor %}
+    </div>
+    {% endif %}
+  {% endfor %}
+  <button type="submit" class="btn btn-dark w-full">Enviar mensagem</button>
+</form>

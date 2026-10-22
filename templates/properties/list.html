@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Imóveis para venda e aluguel — {{ site.name }}{% endblock %}
+{% block meta_description %}Veja todos os imóveis para venda e aluguel da {{ site.name }}.{% endblock %}
+
+{% block content %}
+<h1 class="font-display text-4xl md:text-5xl">Imóveis para<br>comprar e alugar</h1>
+<div class="mt-10 grid gap-10 lg:grid-cols-[17rem_1fr]">
+  <details id="filtros" open class="lg:self-start border border-linha bg-papel">
+    <summary class="lg:hidden cursor-pointer px-4 py-3 font-semibold">Filtros</summary>
+    <form method="get" action="{% url 'properties:list' %}" class="p-4 space-y-3"
+          hx-get="{% url 'properties:list' %}" hx-target="#results" hx-push-url="true"
+          hx-trigger="change, keyup changed delay:400ms from:input[type=number]">
+      {% for field in filter.form %}
+        <div><label for="{{ field.id_for_label }}" class="field-label">{{ field.label }}</label>{{ field }}</div>
+      {% endfor %}
+      <button type="submit" class="btn btn-dark w-full">Buscar</button>
+      <a href="{% url 'properties:list' %}" class="block text-center text-sm underline underline-offset-4">Limpar filtros</a>
+    </form>
+  </details>
+  <div id="results">
+    {% include "properties/partials/results.html" %}
+  </div>
+</div>
+<script>
+  (function () {
+    var d = document.getElementById('filtros');
+    if (d && window.matchMedia('(max-width: 1023px)').matches) d.removeAttribute('open');
+  })();
+</script>
+{% endblock %}

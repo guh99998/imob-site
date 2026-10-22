@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}{{ property.title }} — {{ property.code }} | {{ site.name }}{% endblock %}
+{% block meta_description %}{{ property.category.name }} para {{ property.get_purpose_display|lower }} em {{ property.neighborhood.name }}, {{ property.neighborhood.city.name }}. {{ property.bedrooms }} quartos, {{ property.parking_spaces }} vagas.{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ property.title }}{% endblock %}
+{% block og_description %}{{ property.category.name }} em {{ property.neighborhood.name }}, {{ property.neighborhood.city.name }}{% endblock %}
+{% block og_image %}{% with cover=property.cover %}{% if cover %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ cover.image.url }}">{% endif %}{% endwith %}{% endblock %}
+
+{% block content %}
+<nav aria-label="Você está em" class="text-sm mb-5"><a href="{% url 'properties:list' %}" class="underline underline-offset-4">Imóveis</a> / {{ property.code }}</nav>
+
+{# GALERIA: uma foto grande + mosaico. Sem JS, cada foto é um link para a imagem. #}
+{% if photos %}
+<div class="grid gap-2 md:grid-cols-4 md:grid-rows-2" id="galeria">
+  <a href="{{ photos.0.image.url }}" class="md:col-span-2 md:row-span-2 block aspect-[4/3] md:aspect-auto md:h-[28rem] overflow-hidden" data-lightbox>
+    <img src="{{ photos.0.image.url }}" alt="{{ photos.0.caption|default:property.title }}" class="w-full h-full object-cover">
+  </a>
+  {% for ph in photos|slice:"1:5" %}
+  <a href="{{ ph.image.url }}" class="hidden md:block overflow-hidden relative h-[13.9rem]" data-lightbox>
+    <img src="{{ ph.image.url }}" alt="{{ ph.caption|default:property.title }}" loading="lazy" class="w-full h-full object-cover">
+    {% if forloop.last and photos|length > 5 %}<span class="absolute inset-0 bg-petroleo/70 text-papel flex items-center justify-center font-semibold">+{{ photos|length|add:"-5" }} fotos</span>{% endif %}
+  </a>
+  {% endfor %}
+  {% for ph in photos|slice:"5:" %}<a href="{{ ph.image.url }}" class="sr-only" data-lightbox>{{ ph.caption|default:property.title }}</a>{% endfor %}
+</div>
+<dialog id="lightbox" class="m-auto max-w-[95vw] max-h-[95vh] bg-transparent p-0 backdrop:bg-petroleo/90" aria-label="Galeria de fotos">
+  <form method="dialog" class="flex items-center justify-between gap-3 text-papel mb-2">
+    <button type="button" data-prev class="btn btn-line" aria-label="Foto anterior">Anterior</button>
+    <button type="button" data-next class="btn btn-line" aria-label="Próxima foto">Próxima</button>
+    <button class="btn" value="close">Fechar</button>
+  </form>
+  <img alt="" class="max-w-[95vw] max-h-[80vh] object-contain mx-auto">
+</dialog>
+{% else %}
+<div class="aspect-[16/7] bg-linha"></div>
+{% endif %}
+
+<div class="mt-10 grid gap-12 lg:grid-cols-[1fr_22rem]">
+  <div>
+    <p class="text-musgo font-medium">{{ property.category.name }} · {{ property.full_address }} · Cód. {{ property.code }}</p>
+    <h1 class="font-display text-4xl md:text-5xl mt-2 max-w-2xl">{{ property.title }}</h1>
+
+    <h2 class="sr-only">Ficha técnica</h2>
+    <div class="mt-8 max-w-xl">{% include "partials/property_sheet.html" with p=property size="lg" %}</div>
+    <dl class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 text-sm max-w-xl">
+      {% if property.suites %}<div><dt class="opacity-70">Suítes</dt><dd class="font-semibold tabular-nums">{{ property.suites }}</dd></div>{% endif %}
+      {% if property.area_total %}<div><dt class="opacity-70">Área total</dt><dd class="font-semibold tabular-nums">{{ property.area_total|floatformat:"-2" }} m²</dd></div>{% endif %}
+      {% if property.area_built %}<div><dt class="opacity-70">Área construída</dt><dd class="font-semibold tabular-nums">{{ property.area_built|floatformat:"-2" }} m²</dd></div>{% endif %}
+      <div><dt class="opacity-70">Categoria</dt><dd class="font-semibold">{{ property.category.name }}</dd></div>
+    </dl>
+
+    {% if property.description %}
+    <h2 class="font-display text-3xl mt-12 mb-3">Sobre o imóvel</h2>
+    <div class="max-w-prose space-y-3">{{ property.description|linebreaks }}</div>
+    {% endif %}
+
+    {% if property.features.all %}
+    <h2 class="font-display text-3xl mt-12 mb-3">Comodidades</h2>
+    <ul class="grid sm:grid-cols-2 gap-x-8 max-w-xl">
+      {% for f in property.features.all %}<li class="py-1.5 border-b border-linha">{{ f.name }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    <h2 class="font-display text-3xl mt-12 mb-3">Localização</h2>
+    <p>{{ property.full_address }}</p>
+  </div>
+
+  <aside class="space-y-6 lg:sticky lg:top-6 lg:self-start">
+    <div class="bg-papel border border-petroleo p-5">
+      {% if not property.is_available %}<p class="text-alerta font-semibold mb-2">{{ property.get_status_display }}</p>{% endif %}
+      {% if property.purpose != "RENT" and property.sale_price %}
+        <p class="text-sm">Venda</p>
+        <p class="font-display text-4xl text-latao-escuro tabular-nums">R$ {{ property.sale_price|intcomma }}</p>
+      {% endif %}
+      {% if property.purpose != "SALE" and property.rent_price %}
+        <p class="text-sm mt-3">Aluguel</p>
+        <p class="font-display text-4xl text-latao-escuro tabular-nums">R$ {{ property.rent_price|intcomma }}<span class="font-sans text-sm text-petroleo"> /mês</span></p>
+      {% endif %}
+      {% if property.condo_fee %}<p class="text-sm mt-3">Condomínio: R$ {{ property.condo_fee|intcomma }}</p>{% endif %}
+      {% if property.iptu %}<p class="text-sm">IPTU: R$ {{ property.iptu|intcomma }}</p>{% endif %}
+
+      {% if site.whatsapp_digits %}
+      <a target="_blank" rel="noopener"
+         href="https://wa.me/{{ site.whatsapp_digits }}?text={{ 'Olá, tenho interesse no imóvel '|add:property.code|urlencode }}"
+         class="btn w-full mt-5">Falar no WhatsApp</a>
+      {% endif %}
+    </div>
+
+    <div id="lead-box" class="bg-papel border border-linha p-5">
+      <h2 class="font-display text-2xl mb-3">Tenho interesse</h2>
+      {% include "leads/partials/form.html" %}
+    </div>
+  </aside>
+</div>
+
+{% if similar %}
+<section class="mt-20" aria-labelledby="semelhantes">
+  <h2 id="semelhantes" class="font-display text-3xl md:text-4xl">Imóveis semelhantes</h2>
+  <div class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+    {% for p in similar %}{% include "partials/property_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<script>
+(function () {
+  var dlg = document.getElementById('lightbox');
+  var links = Array.prototype.slice.call(document.querySelectorAll('[data-lightbox]'));
+  if (!dlg || !dlg.showModal || !links.length) return;
+  var img = dlg.querySelector('img'), i = 0;
+  function show(n) {
+    i = (n + links.length) % links.length;
+    img.src = links[i].href;
+    img.alt = (links[i].querySelector('img') || links[i]).alt || links[i].textContent;
+  }
+  links.forEach(function (a, n) {
+    a.addEventListener('click', function (e) { e.preventDefault(); show(n); dlg.showModal(); });
+  });
+  dlg.querySelector('[data-prev]').addEventListener('click', function () { show(i - 1); });
+  dlg.querySelector('[data-next]').addEventListener('click', function () { show(i + 1); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+})();
+</script>
+{% endblock %}

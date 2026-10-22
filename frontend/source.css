@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@source "../templates";
+@source "../apps";
+
+/* DevLopesMóveis — tokens (spec 010) */
+@theme {
+  --color-pedra: #e9ece8;
+  --color-papel: #f7f8f6;
+  --color-petroleo: #173a40;
+  --color-petroleo-700: #20505a;
+  --color-musgo: #5f7a68;
+  --color-latao: #b68a3e;
+  --color-latao-escuro: #8d6726;
+  --color-alerta: #a4442f;
+  --color-linha: #c5ccc6;
+
+  --font-display: "Gloock", Georgia, serif;
+  --font-sans: "Schibsted Grotesk", system-ui, sans-serif;
+
+  --radius-ctl: 4px;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--color-pedra);
+    color: var(--color-petroleo);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  :focus-visible { outline: 3px solid var(--color-latao); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 400; line-height: 1.1; text-wrap: balance; }
+  img { display: block; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    border-radius: var(--radius-ctl); padding: .7rem 1.25rem; font-weight: 600;
+    background: var(--color-latao); color: var(--color-petroleo); transition: background .15s;
+  }
+  .btn:hover { background: #c79a4c; }
+  .btn-dark { background: var(--color-petroleo); color: var(--color-papel); }
+  .btn-dark:hover { background: var(--color-petroleo-700); }
+  .btn-line { background: transparent; border: 1px solid currentColor; }
+  .btn-line:hover { background: rgb(255 255 255 / .12); }
+
+  .field {
+    width: 100%; border-radius: var(--radius-ctl); border: 1px solid var(--color-linha);
+    background: var(--color-papel); padding: .6rem .75rem; font-size: .95rem; color: var(--color-petroleo);
+  }
+  .field-label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .25rem; }
+
+  /* A "ficha": carimbo de planta com a metragem em destaque e cotas em grade */
+  .ficha { display: grid; grid-template-columns: auto 1fr; border: 1px solid var(--color-petroleo); background: var(--color-papel); }
+  .ficha-area { padding: .6rem .9rem; border-right: 1px solid var(--color-petroleo); display: flex; align-items: baseline; gap: .2rem; }
+  .ficha-area strong { font-family: var(--font-display); font-weight: 400; font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ficha-area span { font-size: .8rem; }
+  .ficha-cotas { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .ficha-cotas > div { padding: .4rem .6rem; border-right: 1px solid var(--color-linha); display: flex; flex-direction: column-reverse; justify-content: center; }
+  .ficha-cotas > div:last-child { border-right: 0; }
+  .ficha-cotas b { font-variant-numeric: tabular-nums; font-size: 1.1rem; line-height: 1.1; }
+  .ficha-cotas small { font-size: .72rem; opacity: .75; }
+  .ficha-lg .ficha-area strong { font-size: 3.2rem; }
+  .ficha-lg .ficha-area, .ficha-lg .ficha-cotas > div { padding: .9rem 1.1rem; }
+  .ficha-lg .ficha-cotas b { font-size: 1.6rem; }
+  .ficha-lg .ficha-cotas small { font-size: .8rem; }
+
+  .reveal { animation: reveal .9s cubic-bezier(.2, .7, .2, 1) both; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+}
