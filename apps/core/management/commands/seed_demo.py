@@ -11,7 +11,6 @@ from apps.core.models import SiteSettings
 from apps.properties.models import Category, City, Feature, Neighborhood, Property, PropertyPhoto
 
 PHOTOS_DIR = Path(settings.BASE_DIR) / "demo" / "photos"
-CODE_PREFIX = "DEMO-"
 
 CATEGORIES = ["Apartamento", "Casa", "Cobertura", "Terreno", "Comercial"]
 FEATURES = [
@@ -97,7 +96,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if options["reset"]:
-            n, _ = Property.objects.filter(code__startswith=CODE_PREFIX).delete()
+            titles = [row[1] for row in PROPERTIES]
+            n, _ = Property.objects.filter(title__in=titles).delete()
             self.stdout.write(f"{n} registro(s) de exemplo removido(s).")
 
         site = SiteSettings.load()
@@ -107,7 +107,7 @@ class Command(BaseCommand):
             site.email = site.email or "contato@devlopesmoveis.example"
             site.address = site.address or "Rua das Palmeiras, 120 — Vila Serena/SP"
             site.creci = site.creci or "00000-J"
-            site.cnpj = site.cnpj or "00.000.000/0001-00"
+            site.cnpj = site.cnpj or "11.222.333/0001-81"
             site.about = (
                 site.about or "Imobiliária de exemplo: casas e apartamentos com fotos de verdade."
             )
@@ -131,11 +131,9 @@ class Command(BaseCommand):
         for i, row in enumerate(PROPERTIES):
             (num, title, cat, _city, nb, purpose, sale, rent, beds, suites, baths, park, area,
              featured, status, photos, description) = row  # fmt: skip
-            code = f"{CODE_PREFIX}{num}"
-            if Property.objects.filter(code=code).exists():
+            if Property.objects.filter(title=title).exists():
                 continue
             prop = Property.objects.create(
-                code=code,
                 title=title,
                 description=description,
                 category=categories[cat],

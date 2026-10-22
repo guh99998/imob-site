@@ -6,6 +6,8 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
 
+from apps.core.admin_masks import MaskedAdminMixin
+
 from .models import Lead
 
 STATUS_LABELS = {
@@ -16,7 +18,8 @@ STATUS_LABELS = {
 
 
 @admin.register(Lead)
-class LeadAdmin(ModelAdmin):
+class LeadAdmin(MaskedAdminMixin, ModelAdmin):
+    masks = {"phone": "phone"}
     list_display = ("name", "email", "phone", "property_link", "status_badge", "created_at")
     list_filter = ("status", "created_at")
     search_fields = ("name", "email", "phone", "message")

@@ -89,6 +89,9 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
+# Módulos do painel ligados neste site (env FEATURES="brokers,partners,owners,searches").
+SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches"])
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 MAILERS = {
@@ -104,6 +107,8 @@ UNFOLD = {
     "SITE_SUBHEADER": _("Painel de gestão"),
     "SITE_URL": "/",
     "SHOW_HISTORY": False,
+    "THEME": "light",
+    "SCRIPTS": ["apps.core.admin_navigation.masks_script"],
     "BORDER_RADIUS": "4px",
     "DASHBOARD_CALLBACK": "apps.core.admin_dashboard.dashboard_callback",
     # Paleta alinhada ao site público: petróleo como cor principal.
@@ -145,12 +150,14 @@ UNFOLD = {
                         "title": _("Todos os imóveis"),
                         "icon": "home_work",
                         "link": reverse_lazy("admin:properties_property_changelist"),
+                        "active": "apps.core.admin_navigation.all_properties_active",
                         "permission": "apps.core.admin_navigation.can_view_property",
                     },
                     {
                         "title": _("Cadastrar imóvel"),
                         "icon": "add_home",
                         "link": reverse_lazy("admin:properties_property_add"),
+                        "active": "apps.core.admin_navigation.add_property_active",
                         "permission": "apps.core.admin_navigation.can_add_property",
                     },
                     {

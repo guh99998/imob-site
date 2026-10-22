@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
 
+from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.models import SiteSettings
 
 from .models import (
@@ -35,9 +36,9 @@ def format_brl(value):
 
 @admin.register(Category)
 class CategoryAdmin(ModelAdmin):
-    list_display = ("name", "properties_count")
+    list_display = ("name", "code_prefix", "properties_count")
     search_fields = ("name",)
-    fields = ("name", "order", "icon")
+    fields = ("name", "code_prefix", "order", "icon")
     ordering_field = "order"
     hide_ordering_field = True
 
@@ -58,7 +59,8 @@ class NeighborhoodInline(TabularInline):
 
 
 @admin.register(City)
-class CityAdmin(ModelAdmin):
+class CityAdmin(MaskedAdminMixin, ModelAdmin):
+    masks = {"state": "uf"}
     list_display = ("name", "state", "neighborhoods_count")
     search_fields = ("name",)
     fields = ("name", "state")
@@ -106,7 +108,17 @@ class PropertyPhotoInline(TabularInline):
 
 
 @admin.register(Property)
-class PropertyAdmin(ModelAdmin):
+class PropertyAdmin(MaskedAdminMixin, ModelAdmin):
+    masks = {
+        "sale_price": "money",
+        "rent_price": "money",
+        "condo_fee": "money",
+        "iptu": "money",
+        "area_total": "area",
+        "area_built": "area",
+        "zip_code": "cep",
+    }
+    readonly_fields = ("code_display",)
     list_display = (
         "cover_preview",
         "code",
@@ -133,7 +145,15 @@ class PropertyAdmin(ModelAdmin):
             _("Informações"),
             {
                 "classes": ["tab"],
-                "fields": ("title", "category", "purpose", "status", "is_featured", "description"),
+                "fields": (
+                    "code_display",
+                    "title",
+                    "category",
+                    "purpose",
+                    "status",
+                    "is_featured",
+                    "description",
+                ),
             },
         ),
         (
@@ -169,11 +189,11 @@ class PropertyAdmin(ModelAdmin):
                 ),
             },
         ),
-        (
-            _("Avançado"),
-            {"classes": ["tab"], "fields": ("code", "slug")},
-        ),
     )
+
+    @display(description=_("código"))
+    def code_display(self, obj):
+        return obj.code if obj and obj.pk else _("Gerado ao salvar")
 
     @display(description=_("preço"), ordering="sale_price")
     def price(self, obj):

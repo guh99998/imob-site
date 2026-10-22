@@ -9,6 +9,7 @@ from unfold.admin import ModelAdmin
 from unfold.decorators import display
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
+from .admin_masks import MaskedAdminMixin
 from .models import SiteSettings
 
 # Grupos não são usados: permissões são dadas direto na Equipe.
@@ -25,7 +26,8 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
 
 
 @admin.register(SiteSettings)
-class SiteSettingsAdmin(ModelAdmin):
+class SiteSettingsAdmin(MaskedAdminMixin, ModelAdmin):
+    masks = {"phone": "phone", "whatsapp": "phone", "cnpj": "cpf_cnpj", "creci": "creci"}
     readonly_fields = ("logo_preview",)
     fieldsets = (
         (

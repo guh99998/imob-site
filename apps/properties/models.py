@@ -3,7 +3,7 @@ from io import BytesIO
 
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.db import models
+from django.db import models, transaction
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
@@ -11,7 +11,6 @@ from django.utils.translation import gettext_lazy as _
 from PIL import Image, ImageOps
 
 MAX_PHOTO_SIZE = (1600, 1200)
-CODE_PREFIX = "DLM-"
 
 
 def _unique_slug(model, base, max_length, **scope):
@@ -23,6 +22,34 @@ def _unique_slug(model, base, max_length, **scope):
         slug = base[: max_length - len(suffix)] + suffix
         n += 1
     return slug
+
+
+def suggest_prefix(name, taken=()):
+    """Prefixo de 2 letras a partir do nome, evitando os já usados."""
+    letters = [c for c in slugify(name).replace("-", "").upper() if c.isalpha()] or ["X"]
+    first = letters[0]
+    for second in letters[1:] + list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
+        if first + second not in taken:
+            return first + second
+    return first + "X"
+
+
+class CodeSequence(models.Model):
+    """Último número usado por prefixo de código (CA001, CA002...)."""
+
+    prefix = models.CharField(max_length=2, primary_key=True)
+    last = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.prefix}{self.last:03d}"
+
+    @classmethod
+    def next(cls, prefix):
+        with transaction.atomic():
+            seq, _created = cls.objects.select_for_update().get_or_create(prefix=prefix)
+            seq.last += 1
+            seq.save(update_fields=["last"])
+            return f"{prefix}{seq.last:03d}"
 
 
 class Category(models.Model):
@@ -39,6 +66,14 @@ class Category(models.Model):
         blank=True,
         help_text=_("Opcional. Nome de um ícone do Material Symbols (ex.: home)."),
     )
+    code_prefix = models.CharField(
+        _("prefixo do código"),
+        max_length=2,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text=_("2 letras usadas no código dos imóveis (ex.: CA → CA001). Automático."),
+    )
 
     class Meta:
         verbose_name = _("categoria")
@@ -51,6 +86,15 @@ class Category(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = _unique_slug(Category, self.name, 50)
+        if self.code_prefix:
+            self.code_prefix = self.code_prefix.upper()
+        else:
+            taken = set(
+                Category.objects.exclude(pk=self.pk)
+                .exclude(code_prefix__isnull=True)
+                .values_list("code_prefix", flat=True)
+            )
+            self.code_prefix = suggest_prefix(self.name, taken)
         super().save(*args, **kwargs)
 
 
@@ -142,7 +186,7 @@ class Property(models.Model):
         max_length=20,
         unique=True,
         blank=True,
-        help_text=_("Deixe em branco para gerar automaticamente (DLM-0001)."),
+        help_text=_("Gerado automaticamente pela categoria (ex.: CA001)."),
     )
     title = models.CharField(
         _("título"), max_length=200, help_text=_("Aparece no topo do anúncio.")
@@ -231,7 +275,7 @@ class Property(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.code:
-            self.code = self.next_code()
+            self.code = self.next_code(self.category)
         if not self.slug:
             self.slug = _unique_slug(Property, f"{self.code}-{self.title}", 220)
         if self.status != self.Status.DRAFT and self.published_at is None:
@@ -262,14 +306,9 @@ class Property(models.Model):
         if errors:
             raise ValidationError(errors)
 
-    @classmethod
-    def next_code(cls):
-        numbers = [
-            int(c[len(CODE_PREFIX) :])
-            for c in cls.objects.filter(code__startswith=CODE_PREFIX).values_list("code", flat=True)
-            if c[len(CODE_PREFIX) :].isdigit()
-        ]
-        return f"{CODE_PREFIX}{max(numbers, default=0) + 1:04d}"
+    @staticmethod
+    def next_code(category):
+        return CodeSequence.next(category.code_prefix)
 
     @property
     def cover(self):

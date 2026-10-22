@@ -21,6 +21,25 @@ can_view_settings = _perm("core.view_sitesettings")
 can_view_user = _perm("auth.view_user")
 
 
+def masks_script(request):
+    from django.templatetags.static import static
+
+    return static("core/admin/masks.js")
+
+
+def _is_property_list(request):
+    return request.path.startswith(reverse("admin:properties_property_changelist"))
+
+
+def all_properties_active(request):
+    """ "Todos os imóveis" fica ativo na lista e na edição, mas não em /add/."""
+    return _is_property_list(request) and not request.path.endswith("/add/")
+
+
+def add_property_active(request):
+    return request.path == reverse("admin:properties_property_add")
+
+
 def site_settings_link(request):
     """Link direto ao único registro de configurações (cria se ainda não existir)."""
     from .models import SiteSettings

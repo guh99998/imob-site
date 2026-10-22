@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from .validators import validate_cnpj
+
 
 class SiteSettings(models.Model):
     """Singleton com os dados de contato da imobiliária."""
@@ -19,7 +21,7 @@ class SiteSettings(models.Model):
     facebook = models.URLField(_("Facebook"), blank=True)
     logo = models.ImageField(_("logo"), upload_to="site/", blank=True)
     creci = models.CharField(_("CRECI"), max_length=30, blank=True)
-    cnpj = models.CharField(_("CNPJ"), max_length=18, blank=True)
+    cnpj = models.CharField(_("CNPJ"), max_length=18, blank=True, validators=[validate_cnpj])
     about = models.TextField(_("sobre a imobiliária"), blank=True, max_length=500)
     meta_description = models.CharField(
         _("descrição para buscadores"),

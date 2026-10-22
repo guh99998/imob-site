@@ -139,7 +139,7 @@ def test_admin_create_generates_code_and_slug(admin_client):
     r = admin_client.post(reverse("admin:properties_property_add"), data)
     assert r.status_code == 302
     prop = Property.objects.get(title="Casa Nova")
-    assert prop.code.startswith("DLM-") and prop.slug.endswith("casa-nova")
+    assert prop.code == f"{prop.category.code_prefix}001" and prop.slug.endswith("casa-nova")
 
 
 def test_lead_mark_contacted_action(admin_client):

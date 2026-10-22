@@ -22,7 +22,9 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Código (models, campos, variáveis) em inglês; textos de UI, `verbose_name`, mensagens em pt-BR com `gettext_lazy`.
 - Apps em `apps/` (core, properties, leads). Settings em `imob_site/settings/{base,dev,prod}.py`, segredos via `.env`.
 - Choices com `models.TextChoices`. Preços em `DecimalField(max_digits=12, decimal_places=2)`.
-- Público só vê imóveis `Property.objects.published()`.
+- Público só vê imóveis `Property.objects.published()` (publicado + reservado; vendido/alugado só no painel).
+- Código do imóvel é automático por categoria (`Category.code_prefix` + `CodeSequence`: CA001); nunca editar à mão.
+- Campos com máscara no admin: `MaskedAdminMixin` (`apps/core/admin_masks.py`) + `static/core/admin/masks.js`. Módulos opcionais por site: `FEATURES` / `apps/core/features.py`.
 - Views HTMX: detectar `request.htmx` e retornar partial de `templates/partials/`; a página deve funcionar sem JS.
 - Categorias de imóvel são cadastro editável (`Category`), não TextChoices.
 - CRUD é feito no Django Admin (django-unfold; sidebar em `UNFOLD["SIDEBAR"]`) — evoluir o admin antes de criar telas próprias.
