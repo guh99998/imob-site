@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
 
+from apps.core.admin_filters import AdvancedSearchMixin, dropdown_filter
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import enabled
 from apps.core.models import SiteSettings
@@ -78,7 +79,7 @@ class CityAdmin(MaskedAdminMixin, ModelAdmin):
 
 
 @admin.register(Neighborhood)
-class NeighborhoodAdmin(ModelAdmin):
+class NeighborhoodAdmin(AdvancedSearchMixin, ModelAdmin):
     list_display = ("name", "city")
     list_filter = ("city",)
     search_fields = ("name", "city__name")
@@ -144,7 +145,7 @@ class PropertyPhotoInline(TabularInline):
 
 
 @admin.register(Property)
-class PropertyAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
+class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
     masks = {
         "sale_price": "money",
         "rent_price": "money",
@@ -167,9 +168,9 @@ class PropertyAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
     list_display_links = ("code", "title")
     list_filter = ("status", "purpose", "category", "neighborhood__city")
     list_editable = ("is_featured",)
-    list_filter_submit = True
     list_select_related = ("category", "neighborhood__city")
     search_fields = ("code", "title", "street", "neighborhood__name")
+    search_help_text = _("Buscar por código, título, rua ou bairro")
     autocomplete_fields = ("neighborhood",)
     filter_horizontal = ("features",)
     form = PropertyAdminForm
@@ -247,7 +248,7 @@ class PropertyAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
 
     def get_list_filter(self, request):
         extra = [f for f, feat in self.PEOPLE_FIELDS.items() if enabled(feat)]
-        return (*self.list_filter, *extra)
+        return [*super().get_list_filter(request), *(dropdown_filter(Property, f) for f in extra)]
 
     def get_search_fields(self, request):
         extra = [f"{f}__name" for f, feat in self.PEOPLE_FIELDS.items() if enabled(feat)]

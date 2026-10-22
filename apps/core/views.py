@@ -17,7 +17,9 @@ PUBLIC = Q(properties__status__in=PUBLIC_STATUSES)
 def home(request):
     site = SiteSettings.load()
     qs = (
-        Property.objects.published().select_related("neighborhood__city").prefetch_related("photos")
+        Property.objects.published()
+        .select_related("category", "neighborhood__city")
+        .prefetch_related("photos")
     )
     featured = list(qs.filter(is_featured=True)[: site.max_featured])
     categories = list(

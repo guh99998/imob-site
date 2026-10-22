@@ -8,10 +8,14 @@ from apps.leads.forms import LeadForm
 from .filters import PropertyFilter
 from .models import Category, City, Property
 
+PAGE_SIZE = 12  # 4 linhas de 3 no desktop; leve no celular (fotos com lazy loading)
+
 
 def _base_qs():
     return (
-        Property.objects.published().select_related("neighborhood__city").prefetch_related("photos")
+        Property.objects.published()
+        .select_related("category", "neighborhood__city")
+        .prefetch_related("photos")
     )
 
 
@@ -49,12 +53,14 @@ def property_list(request, landing=None):
         if landing.get("city"):
             data["city"] = str(landing["city"].pk)
     f = PropertyFilter(data or None, queryset=_base_qs())
-    page = Paginator(f.qs, 12).get_page(request.GET.get("page"))
+    paginator = Paginator(f.qs, PAGE_SIZE)
+    page = paginator.get_page(request.GET.get("page"))
     params = request.GET.copy()
     params.pop("page", None)
     ctx = {
         "filter": f,
         "page": page,
+        "page_range": paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1),
         "querystring": params.urlencode(),
         "chips": _active_filters(f, request),
         "landing": landing,

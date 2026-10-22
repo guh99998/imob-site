@@ -177,3 +177,13 @@ def test_thumbnails_generated_as_webp():
     photo.refresh_from_db()
     assert photo.thumb_sm.name.endswith(".webp") and photo.thumb_lg.name.endswith(".webp")
     assert "640w" in photo.srcset and "1200w" in photo.srcset
+
+
+def test_category_prefix_never_collides_with_many_same_initial():
+    from apps.properties.models import suggest_prefix
+
+    taken = {"C" + c for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"}
+    prefix = suggest_prefix("Casa nova", taken)
+    assert prefix not in taken and len(prefix) == 2
+    cats = [Category.objects.create(name=f"Categoria {i}") for i in range(40)]
+    assert len({c.code_prefix for c in cats}) == 40

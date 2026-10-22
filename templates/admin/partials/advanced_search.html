@@ -1,0 +1,73 @@
+{% load i18n %}
+{# "Pesquisa avançada": filtros em grade abaixo da busca. Abre sozinha se houver filtro ativo. #}
+<style>
+  #changelist form[oninput] {
+    flex-basis: 100%; order: 10; display: grid !important; gap: .75rem 1rem; align-items: end;
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); padding-top: .25rem;
+  }
+  #changelist.dlm-adv-closed form[oninput] { display: none !important; }
+  #changelist form[oninput] > * { min-width: 0 !important; margin: 0 !important; }
+  /* rótulo em cima, campo ocupando a coluna toda */
+  #changelist form[oninput] .form-field > div { flex-direction: column; align-items: stretch; gap: .3rem; }
+  #changelist form[oninput] label,
+  #changelist form[oninput] h3 {
+    font-size: .8rem; font-weight: 600; color: var(--color-base-500, #71717a); white-space: normal; margin: 0 0 .3rem;
+  }
+  #changelist form[oninput] .form-field label { margin: 0; }
+  #changelist form[oninput] .grow { max-width: none; }
+  #changelist form[oninput] .select2-container { width: 100% !important; }
+  /* período (de / até) lado a lado, ocupando 2 colunas */
+  #changelist form[oninput] > div:has(> h3) { grid-column: span 2; }
+  #changelist form[oninput] > div:has(> h3) > div { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+  #changelist form[oninput] > div:has(> h3) > div > div { display: flex; align-items: center; gap: .25rem; min-width: 0; }
+  #changelist form[oninput] > div:has(> h3) input { width: 100%; min-width: 0; }
+  /* atalhos "Hoje | calendário" do Django: o campo do Unfold já tem o ícone de calendário */
+  #changelist form[oninput] > div:has(> h3) > div > div > span { display: none; }
+  @media (max-width: 640px) { #changelist form[oninput] > div:has(> h3) { grid-column: auto; } }
+
+  .dlm-adv-toggle { display: inline-flex; align-items: center; gap: .35rem; font-size: .875rem; font-weight: 500;
+    padding: .5rem .75rem; border: 1px solid rgb(0 0 0 / .12); border-radius: 6px; background: #fff; cursor: pointer; }
+  .dlm-adv-toggle:hover { color: var(--color-primary-700); border-color: var(--color-primary-300); }
+  .dlm-adv-toggle[aria-expanded="true"] { background: var(--color-primary-50); color: var(--color-primary-700); border-color: var(--color-primary-300); }
+  .dlm-adv-clear { font-size: .8rem; text-decoration: underline; align-self: center; color: var(--color-primary-700); }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var cl = document.getElementById('changelist');
+  var filters = cl && cl.querySelector('form[oninput]');
+  if (!filters) return;
+
+  var search = cl.querySelector('input[type=text][name$="q"], #searchbar');
+  if (search && /type to search/i.test(search.placeholder)) search.placeholder = 'Buscar…';
+
+  // Rótulos mais curtos ("Por situação" -> "Situação") e placeholders em português.
+  filters.querySelectorAll('label, h3').forEach(function (el) {
+    var t = el.textContent.trim().replace(/^Por\s+/i, '');
+    el.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+  });
+  filters.querySelectorAll('input[placeholder="From"]').forEach(function (i) { i.placeholder = 'De'; });
+  filters.querySelectorAll('input[placeholder="To"]').forEach(function (i) { i.placeholder = 'Até'; });
+
+  var open = {{ cl.has_active_filters|yesno:"true,false" }};
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'dlm-adv-toggle';
+  btn.setAttribute('aria-controls', 'dlm-adv-filters');
+  filters.id = 'dlm-adv-filters';
+  function sync() {
+    cl.classList.toggle('dlm-adv-closed', !open);
+    btn.setAttribute('aria-expanded', open);
+    btn.innerHTML = '<span class="material-symbols-outlined md-18">tune</span>{% trans "Pesquisa avançada" %}' + (open ? ' ▲' : ' ▼');
+  }
+  btn.addEventListener('click', function () { open = !open; sync(); });
+  filters.parentNode.insertBefore(btn, filters);
+  {% if cl.has_active_filters %}
+  var clear = document.createElement('a');
+  clear.className = 'dlm-adv-clear';
+  clear.href = '?';
+  clear.textContent = '{% trans "Limpar filtros" %}';
+  filters.parentNode.insertBefore(clear, filters);
+  {% endif %}
+  sync();
+});
+</script>

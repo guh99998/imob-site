@@ -28,11 +28,15 @@ def _unique_slug(model, base, max_length, **scope):
 def suggest_prefix(name, taken=()):
     """Prefixo de 2 letras a partir do nome, evitando os já usados."""
     letters = [c for c in slugify(name).replace("-", "").upper() if c.isalpha()] or ["X"]
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     first = letters[0]
-    for second in letters[1:] + list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"):
-        if first + second not in taken:
-            return first + second
-    return first + "X"
+    candidates = [first + s for s in letters[1:] + list(alphabet)]
+    # Inicial esgotada: qualquer par livre (AA..ZZ).
+    candidates += [a + b for a in alphabet for b in alphabet]
+    for prefix in candidates:
+        if prefix not in taken:
+            return prefix
+    raise ValueError("Não há prefixo de 2 letras disponível.")
 
 
 class CodeSequence(models.Model):

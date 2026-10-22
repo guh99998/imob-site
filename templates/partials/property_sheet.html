@@ -9,8 +9,8 @@
     {% endif %}
   </div>
   <div class="ficha-cotas">
-    <div><dt><small>quarto{{ p.bedrooms|pluralize }}</small></dt><dd><b>{{ p.bedrooms }}</b></dd></div>
-    <div><dt><small>banheiro{{ p.bathrooms|pluralize }}</small></dt><dd><b>{{ p.bathrooms }}</b></dd></div>
+    <div><dt><small>{% if size == "lg" %}quarto{{ p.bedrooms|pluralize }}{% else %}qto{{ p.bedrooms|pluralize }}{% endif %}</small></dt><dd><b>{{ p.bedrooms }}</b></dd></div>
+    <div><dt><small>{% if size == "lg" %}banheiro{{ p.bathrooms|pluralize }}{% else %}banh.{% endif %}</small></dt><dd><b>{{ p.bathrooms }}</b></dd></div>
     <div><dt><small>vaga{{ p.parking_spaces|pluralize }}</small></dt><dd><b>{{ p.parking_spaces }}</b></dd></div>
   </div>
 </dl>

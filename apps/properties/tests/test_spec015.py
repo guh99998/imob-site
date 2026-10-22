@@ -115,3 +115,29 @@ def test_admin_add_still_works_with_bulk_field(admin_client):
         "photos-MAX_NUM_FORMS": 1000,
     }
     assert admin_client.post(reverse("admin:properties_property_add"), data).status_code == 302
+
+
+def test_pagination_is_numbered(client):
+    PropertyFactory.create_batch(30)
+    r = client.get(reverse("properties:list"), {"page": 2})
+    html = r.content.decode()
+    assert len(r.context["page"]) == 12
+    assert 'aria-current="page">2<' in html and "page=3" in html
+
+
+def test_list_query_count_is_constant(client, django_assert_max_num_queries):
+    PropertyFactory.create_batch(30)
+    with django_assert_max_num_queries(15):
+        client.get(reverse("properties:list"))
+
+
+def test_property_search_page_has_side_content(client):
+    html = client.get(reverse("leads:search")).content.decode()
+    assert "Como funciona" in html and "disponíve" in html
+
+
+def test_admin_filters_in_advanced_search(admin_client):
+    html = admin_client.get(reverse("admin:properties_property_changelist")).content.decode()
+    assert "Pesquisa avançada" in html and "form[oninput]" in html
+    assert 'oninput="this.submit()"' in html
+    assert "filter-open-button" not in html  # sem o botão "Filters" (gaveta lateral)

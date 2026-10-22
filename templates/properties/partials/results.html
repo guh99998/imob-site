@@ -15,17 +15,24 @@
   <p class="border border-line bg-surface p-6">Nenhum imóvel encontrado com esses filtros. <a class="underline" href="{% url 'properties:list' %}">Veja todos os imóveis</a> ou tire um filtro acima.</p>
 {% endif %}
 {% if page.has_other_pages %}
-<nav class="flex items-center justify-between gap-4 mt-12 border-t border-line pt-4" aria-label="Paginação">
+<nav class="flex flex-wrap items-center justify-center gap-1.5 mt-12 border-t border-line pt-6" aria-label="Paginação">
   {% if page.has_previous %}
-    <a class="btn btn-line" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.previous_page_number }}"
-       hx-get="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.previous_page_number }}"
-       hx-target="#results" hx-push-url="true">Anterior</a>
-  {% else %}<span></span>{% endif %}
-  <span class="text-sm tabular-nums">Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+    <a class="pager" rel="prev" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.previous_page_number }}"
+       hx-get="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.previous_page_number }}" hx-target="#results" hx-push-url="true"
+       aria-label="Página anterior">&lsaquo;<span class="hidden sm:inline">&nbsp;Anterior</span></a>
+  {% endif %}
+  {% for n in page_range %}
+    {% if n == page.paginator.ELLIPSIS %}<span class="px-1 text-muted" aria-hidden="true">…</span>
+    {% elif n == page.number %}<span class="pager is-current" aria-current="page">{{ n }}</span>
+    {% else %}<a class="pager" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ n }}"
+       hx-get="?{% if querystring %}{{ querystring }}&{% endif %}page={{ n }}" hx-target="#results" hx-push-url="true"
+       aria-label="Página {{ n }}">{{ n }}</a>{% endif %}
+  {% endfor %}
   {% if page.has_next %}
-    <a class="btn btn-line" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.next_page_number }}"
-       hx-get="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.next_page_number }}"
-       hx-target="#results" hx-push-url="true">Próxima</a>
-  {% else %}<span></span>{% endif %}
+    <a class="pager" rel="next" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.next_page_number }}"
+       hx-get="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.next_page_number }}" hx-target="#results" hx-push-url="true"
+       aria-label="Próxima página"><span class="hidden sm:inline">Próxima&nbsp;</span>&rsaquo;</a>
+  {% endif %}
 </nav>
+<p class="mt-2 text-center text-sm text-muted tabular-nums">Página {{ page.number }} de {{ page.paginator.num_pages }}</p>
 {% endif %}

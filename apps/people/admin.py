@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
 
+from apps.core.admin_filters import AdvancedSearchMixin
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import FeatureGatedAdminMixin
 
@@ -51,7 +52,13 @@ class LinkedPropertiesMixin:
 
 
 @admin.register(Broker)
-class BrokerAdmin(FeatureGatedAdminMixin, LinkedPropertiesMixin, MaskedAdminMixin, ModelAdmin):
+class BrokerAdmin(
+    AdvancedSearchMixin,
+    FeatureGatedAdminMixin,
+    LinkedPropertiesMixin,
+    MaskedAdminMixin,
+    ModelAdmin,
+):
     feature = "brokers"
     property_filter = "broker"
     masks = {"phone": "phone", "creci": "creci"}

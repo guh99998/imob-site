@@ -69,4 +69,5 @@ def property_search(request):
     ctx = {"form": form, "sent": sent}
     if request.htmx:
         return render(request, "leads/partials/search_box.html", ctx, status=status)
+    ctx["available_count"] = Property.objects.published().count()
     return render(request, "leads/property_search.html", ctx, status=status)

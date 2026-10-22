@@ -11,9 +11,10 @@ def test_seed_demo_is_idempotent(settings, tmp_path):
     settings.MEDIA_ROOT = tmp_path
     call_command("seed_demo")
     first = Property.objects.count()
-    assert first == 12
+    assert first == 36
     assert Property.objects.filter(status=Property.Status.SOLD).count() == 1
     assert SiteSettings.load().name == "DevLopesMóveis"
+    assert SiteSettings.load().logo
     call_command("seed_demo")
     assert Property.objects.count() == first
     call_command("seed_demo", "--reset")

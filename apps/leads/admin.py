@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 from unfold.decorators import action, display
 
+from apps.core.admin_filters import AdvancedSearchMixin
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import FeatureGatedAdminMixin
 from apps.people.scoping import ScopedByRoleMixin
@@ -23,12 +24,13 @@ STATUS_LABELS = {
 
 
 @admin.register(Lead)
-class LeadAdmin(ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
+class LeadAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
     scope_prefix = "property__"
     masks = {"phone": "phone"}
     list_display = ("name", "email", "phone", "kind", "property_link", "status_badge", "created_at")
     list_filter = ("status", "kind", "created_at")
     search_fields = ("name", "email", "phone", "message")
+    search_help_text = _("Buscar por nome, e-mail, telefone ou mensagem")
     readonly_fields = ("created_at",)
     list_select_related = ("property",)
     actions = ["mark_contacted"]
@@ -67,7 +69,9 @@ SEARCH_STATUS_LABELS = {
 
 
 @admin.register(PropertySearch)
-class PropertySearchAdmin(FeatureGatedAdminMixin, MaskedAdminMixin, ModelAdmin):
+class PropertySearchAdmin(
+    AdvancedSearchMixin, FeatureGatedAdminMixin, MaskedAdminMixin, ModelAdmin
+):
     feature = "searches"
     masks = {"whatsapp": "phone", "min_price": "money", "max_price": "money"}
     list_display = (
@@ -82,6 +86,7 @@ class PropertySearchAdmin(FeatureGatedAdminMixin, MaskedAdminMixin, ModelAdmin):
     )
     list_filter = ("status", "purpose", "city", "created_at")
     search_fields = ("name", "whatsapp", "email", "neighborhoods", "notes")
+    search_help_text = _("Buscar por nome, WhatsApp ou observações")
     readonly_fields = ("created_at", "lgpd_consent")
     filter_horizontal = ("categories",)
     actions = ["mark_contacted"]

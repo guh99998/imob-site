@@ -87,6 +87,47 @@ PROPERTIES = [
 ]  # fmt: skip
 
 
+LOGO = Path(settings.BASE_DIR) / "demo" / "logo.png"
+
+# Imóveis extras (gerados) para a listagem ter várias páginas: (título-base, categoria, finalidade)
+EXTRA_KINDS = [
+    ("Casa térrea com quintal", "Casa", S),
+    ("Apartamento com sacada", "Apartamento", R),
+    ("Casa com edícula", "Casa", B),
+    ("Apartamento compacto perto do metrô", "Apartamento", S),
+    ("Cobertura com churrasqueira", "Cobertura", S),
+    ("Terreno plano", "Terreno", S),
+    ("Sala comercial com recepção", "Comercial", R),
+    ("Casa com piscina", "Casa", S),
+]
+
+
+def extra_rows():
+    """24 imóveis determinísticos, reaproveitando as fotos dos imóveis de exemplo."""
+    photos_by_cat = {}
+    for row in PROPERTIES:
+        photos_by_cat.setdefault(row[2], []).extend(row[15])
+    nbs = [(city, nb) for (city, _uf), names in CITIES.items() for nb in names]
+    rows = []
+    for n in range(24):
+        base, cat, purpose = EXTRA_KINDS[n % len(EXTRA_KINDS)]
+        city, nb = nbs[(n * 3 + n // len(EXTRA_KINDS)) % len(nbs)]
+        land, shop = cat == "Terreno", cat == "Comercial"
+        beds = 0 if land or shop else 1 + n % 4
+        area = 300 + n * 15 if land else 45 + n * 9
+        sale = 250000 + n * 47000 if purpose != R else None
+        rent = 1800 + n * 160 if purpose != S else None
+        pics = photos_by_cat[cat]
+        photos = [pics[(n + k) % len(pics)] for k in range(min(2, len(pics)))]
+        rows.append(
+            (f"x{n:02d}", f"{base} em {nb}", cat, city, nb, purpose, sale, rent, beds,
+             min(beds, 1 + n % 2) if beds else 0, max(1, beds - 1) if not land else 0,
+             0 if land else n % 3, area, False, "PUBLISHED", photos,
+             f"{base} no bairro {nb}, em {city}. Imóvel de exemplo para testar a listagem.")
+        )  # fmt: skip
+    return rows
+
+
 class Command(BaseCommand):
     help = "Cria dados de exemplo (DevLopesMóveis). Use --reset para recriar os imóveis de exemplo."
 
@@ -97,7 +138,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if options["reset"]:
-            titles = [row[1] for row in PROPERTIES]
+            titles = [row[1] for row in PROPERTIES + extra_rows()]
             n, _ = Property.objects.filter(title__in=titles).delete()
             self.stdout.write(f"{n} registro(s) de exemplo removido(s).")
 
@@ -115,6 +156,8 @@ class Command(BaseCommand):
         # Número fictício óbvio; substitui o antigo número de exemplo.
         if site.whatsapp in ("", "5511940001234"):
             site.whatsapp = "5511900000000"
+        if not site.logo and LOGO.exists():
+            site.logo.save("logo-demo.png", ContentFile(LOGO.read_bytes()), save=False)
         site.save()
 
         categories = {
@@ -141,7 +184,7 @@ class Command(BaseCommand):
         )
 
         created = 0
-        for i, row in enumerate(PROPERTIES):
+        for i, row in enumerate(PROPERTIES + extra_rows()):
             (num, title, cat, _city, nb, purpose, sale, rent, beds, suites, baths, park, area,
              featured, status, photos, description) = row  # fmt: skip
             if Property.objects.filter(title=title).exists():

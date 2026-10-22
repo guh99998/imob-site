@@ -14,6 +14,13 @@ Aplicar a revisão das specs 011–014: identidade visual do desenvolvedorgustav
 - Destaques: limite 3 (padrão, validação e data migration); 3 cards iguais na home.
 - Admin: fotos em lote no imóvel (aba "Enviar fotos"); "Ver imóveis" em corretores/parceiros/proprietários (lista do painel filtrada).
 
+### Revisão 2
+- Admin: filtros em "Pesquisa avançada" (grade abaixo da busca, abre sozinha com filtro ativo, "Limpar filtros"); sem o botão/gaveta "Filters". `AdvancedSearchMixin` em `apps/core/admin_filters.py` (Unfold `contrib.filters`, horizontais).
+- Logo de exemplo (`demo/logo.png`) carregado pelo `seed_demo`; no rodapé escuro fica sobre fundo branco.
+- `seed_demo` cria 36 imóveis (24 gerados) → 3 páginas de 12; paginação numerada (`get_elided_page_range`); `select_related("category")` remove N+1 na lista/home.
+- "Procuro um imóvel": coluna lateral (foto + nº de imóveis, como funciona, contato).
+- `suggest_prefix` nunca esgota (cai para qualquer par AA–ZZ livre).
+
 ## Critérios de aceite
 - Sem scroll horizontal em 390/1024/1440 (home, procuro, lista).
 - Código existente redireciona; vendido/alugado não.
@@ -25,3 +32,4 @@ Aplicar a revisão das specs 011–014: identidade visual do desenvolvedorgustav
 - [x] Formulário "Procuro um imóvel" enxuto
 - [x] Fotos em lote e "Ver imóveis"
 - [x] Testes, seed, lint
+- [x] Revisão 2: pesquisa avançada no admin, logo, paginação, página Procuro
