@@ -324,6 +324,12 @@ class Property(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     published_at = models.DateTimeField(_("publicado em"), null=True, blank=True)
+    favorites_count = models.PositiveIntegerField(
+        _("favoritos"),
+        default=0,
+        editable=False,
+        help_text=_("Quantas vezes o imóvel foi salvo nos favoritos do site."),
+    )
 
     objects = PropertyQuerySet.as_manager()
 

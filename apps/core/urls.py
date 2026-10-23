@@ -12,6 +12,7 @@ urlpatterns = [
     path("anuncie/", views.advertise, name="advertise"),
     path("contato/", views.contact, name="contact"),
     path("politica-de-privacidade/", views.privacy, name="privacy"),
+    path("favoritos/", property_views.favorite_list, name="favorites"),
     re_path(
         r"^(?P<kind>comprar|alugar)/(?P<category>[-\w]+)/$",
         property_views.landing,

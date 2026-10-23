@@ -5,6 +5,7 @@ Site de imobiliária (venda e aluguel) com painel de gestão. Django 6.1, Python
 ## O que tem hoje
 - **Site público:** home com busca completa, lista com filtros e paginação, detalhe do imóvel (galeria, ficha, comodidades), SEO (sitemap, JSON-LD, Open Graph).
 - **Contato:** WhatsApp com mensagem pronta por imóvel (texto editável no painel), botão "Copiar link do imóvel", formulários de interesse, "Procuro um imóvel", "Anuncie seu imóvel" e Contato.
+- **Favoritos:** coração nos cards e no detalhe, página `/favoritos/` e contador no header, sem login (cookie `favs`, funciona sem JS). O painel mostra quantas vezes cada imóvel foi favoritado.
 - **Painel (`/admin/`):** imóveis com código automático por categoria, fotos em lote, máscaras, pesquisa avançada, mensagem pronta para o cliente, leads e procuras, corretores/parceiros/proprietários com funções e auditoria.
 - **Módulos opcionais por site:** variável `FEATURES` (`brokers`, `partners`, `owners`, `searches`).
 
@@ -54,7 +55,7 @@ Spec-driven: toda feature nasce em `specs/NNN-nome.md` (copiar `specs/000-templa
 ## Roadmap
 Plano em `plans/plano-016-022-novas-funcoes.md`:
 - [x] 016 — WhatsApp com mensagem pronta, copiar link, crédito do desenvolvedor
-- [ ] 017 — Favoritos (cookie, sem login)
+- [x] 017 — Favoritos (cookie, sem login)
 - [ ] 018 — Buscas populares na home
 - [ ] 019 — Detecção de imóveis duplicados
 - [ ] 020 — CRM de clientes

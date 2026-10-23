@@ -155,7 +155,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         "area_built": "area",
         "zip_code": "cep",
     }
-    readonly_fields = ("code_display", "audit_created", "audit_updated")
+    readonly_fields = ("code_display", "audit_created", "audit_updated", "favorites_count")
     list_display = (
         "cover_preview",
         "code",
@@ -163,6 +163,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         "category",
         "price",
         "status_badge",
+        "favorites_count",
         "is_featured",
     )
     list_display_links = ("code", "title")
@@ -243,7 +244,13 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         fieldsets.append((_("Responsáveis"), {"classes": ["tab"], "fields": people}))
         if obj is not None:
             fieldsets.append(
-                (_("Registro"), {"classes": ["tab"], "fields": ("audit_created", "audit_updated")})
+                (
+                    _("Registro"),
+                    {
+                        "classes": ["tab"],
+                        "fields": ("audit_created", "audit_updated", "favorites_count"),
+                    },
+                )
             )
         return fieldsets
 

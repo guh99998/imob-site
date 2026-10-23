@@ -3,6 +3,7 @@ from django.core.cache import cache
 from django.db.models import Count, Q
 from django.urls import reverse
 
+from apps.properties import favorites
 from apps.properties.models import PUBLIC_STATUSES, Category, City
 
 from .features import enabled
@@ -53,7 +54,10 @@ def _nav_items():
 
 
 def site_settings(request):
+    favorite_codes = favorites.read(request)
     return {
+        "favorite_codes": favorite_codes,
+        "favorites_total": len(favorite_codes),
         "site": SiteSettings.load(),
         "features": {"searches": enabled("searches")},
         "developer_credit": settings.DEVELOPER_CREDIT,

@@ -1,10 +1,13 @@
 from django.core.paginator import Paginator
-from django.db.models import Case, IntegerField, Q, When
+from django.db.models import Case, F, IntegerField, Q, When
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
 from apps.core import seo
 from apps.leads.forms import LeadForm
 
+from . import favorites
 from .filters import PropertyFilter
 from .models import Category, City, Property
 
@@ -117,3 +120,54 @@ def property_detail(request, slug):
             "share_url": prop.share_url(request),
         },
     )
+
+
+@require_POST
+def favorite(request, slug):
+    """Alterna o favorito no cookie. O contador do imóvel só sobe."""
+    prop = get_object_or_404(Property.objects.published(), slug=slug)
+    codes = favorites.read(request)
+    if prop.code in codes:
+        codes.remove(prop.code)
+    else:
+        codes = [*codes, prop.code][-favorites.MAX_ITEMS :]
+        Property.objects.filter(pk=prop.pk).update(favorites_count=F("favorites_count") + 1)
+    next_url = request.POST.get("next", "")
+    if request.htmx:
+        # favorite_codes do contexto sobrepõe o do context processor (cookie antigo).
+        response = render(
+            request,
+            "partials/favorite_response.html",
+            {
+                "p": prop,
+                "favorite_codes": codes,
+                "favorites_total": len(codes),
+                "variant": request.POST.get("variant", ""),
+                "next": next_url,
+            },
+        )
+    else:
+        if not url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        ):
+            next_url = prop.get_absolute_url()
+        response = redirect(next_url)
+    return favorites.write(response, codes)
+
+
+def favorite_list(request):
+    codes = favorites.read(request)
+    found = {p.code: p for p in _base_qs().filter(code__in=codes)}
+    kept = [c for c in codes if c in found]
+    response = render(
+        request,
+        "properties/favorites.html",
+        {
+            "properties": [found[c] for c in reversed(kept)],  # mais recentes primeiro
+            "favorite_codes": kept,
+            "favorites_total": len(kept),
+        },
+    )
+    if kept != codes:
+        favorites.write(response, kept)
+    return response

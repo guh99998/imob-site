@@ -12,7 +12,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Deploy não é Heroku: `Dockerfile` genérico (sem Procfile).
 
 ## Comandos
-- Instalar: `uv sync` (uv não instalado? `pip install uv`)
+- Instalar: `uv sync` (uv não instalado? `pip install uv`; se `uv` não estiver no PATH, use `.venv\Scripts\uv.exe`)
 - Tailwind (prod): `uv run python manage.py tailwind build && uv run python manage.py collectstatic`
 - Prod: `DJANGO_SETTINGS_MODULE=imob_site.settings.prod` (vars em `.env.example`)
 - Rodar: `uv run python manage.py tailwind runserver`
@@ -28,6 +28,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Público só vê imóveis `Property.objects.published()` (publicado + reservado; vendido/alugado só no painel).
 - Código do imóvel é automático por categoria (`Category.code_prefix` + `CodeSequence`: CA001); nunca editar à mão.
 - Campos com máscara no admin: `MaskedAdminMixin` (`apps/core/admin_masks.py`) + `static/core/admin/masks.js`. Módulos opcionais por site: `FEATURES` / `apps/core/features.py`.
+- Favoritos do visitante: cookie `favs`, lido/gravado só por `apps/properties/favorites.py`; `favorite_codes`/`favorites_total` vêm do context processor (a view sobrescreve no contexto quando muda o cookie).
 - Views HTMX: detectar `request.htmx` e retornar partial de `templates/partials/`; a página deve funcionar sem JS.
 - Categorias de imóvel são cadastro editável (`Category`), não TextChoices.
 - CRUD é feito no Django Admin (django-unfold; sidebar em `UNFOLD["SIDEBAR"]`) — evoluir o admin antes de criar telas próprias.
