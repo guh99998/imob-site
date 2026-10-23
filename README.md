@@ -56,7 +56,7 @@ VPS com Docker Compose (spec 028). O **Caddy** (HTTPS automático) é uma stack 
 2. Em `/opt/imob-site`: clone o repositório e `cp .env.production.example .env` (preencha `POSTGRES_PASSWORD`, `SECRET_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, e-mail; `chmod 600 .env`). Aponte o DNS (registro A, sem proxy da Cloudflare) para a VPS.
 3. `docker compose up -d --build` (as migrations rodam no start do app), depois `docker compose up -d` em `/opt/proxy`.
 4. Superusuário: `docker compose exec web python manage.py createsuperuser`.
-5. Atualizar: `git pull && docker compose up -d --build`.
+5. Atualizar: o GitHub Actions (`.github/workflows/ci.yml`) testa cada push e, na `main`, publica `ghcr.io/guh99998/imob-site:latest`; na VPS: `git pull && docker compose pull web && docker compose up -d`. Sem imagem publicada: `docker compose up -d --build`.
 6. Backup: `deploy/backup.sh` grava `db-*.sql.gz` e `media-*.tar.gz` em `/opt/backups` (14 dias); agende no cron (instale `cron`) e, para guardar fora da VPS, configure um remoto `rclone` criptografado (ex.: Cloudflare R2 com token restrito ao bucket) e use `BACKUP_REMOTE=r2crypt:` na linha do cron (30 dias no destino). Restaurar o banco: `gunzip -c db-X.sql.gz | docker compose exec -T db psql -U imob imob`. Com S3 (`AWS_STORAGE_BUCKET_NAME`) as fotos saem do volume.
 - Healthcheck: `GET /healthz/`. Fotos em `/media/` são servidas pelo Caddy (volume `imob_media`); estáticos pelo WhiteNoise. Só o Caddy publica portas (80/443); o banco nunca.
 - Sem Docker: qualquer host Python com `DJANGO_SETTINGS_MODULE=imob_site.settings.prod`, `migrate --noinput` a cada versão e `check --deploy` antes de publicar.
