@@ -1,8 +1,10 @@
-# Produção em uma VPS: Postgres + app (gunicorn) + Caddy (HTTPS). Veja a seção Deploy do README.
+# imob-site em produção (VPS): Postgres + app. O HTTPS fica no Caddy compartilhado
+# (deploy/proxy). Pré-requisitos: docker network create proxy && docker volume create imob_media
 services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    mem_limit: 384m
     environment:
       POSTGRES_DB: imob
       POSTGRES_USER: imob
@@ -18,14 +20,21 @@ services:
   web:
     build: .
     restart: unless-stopped
+    mem_limit: 640m
     env_file: .env
     environment:
       DATABASE_URL: postgres://imob:${POSTGRES_PASSWORD}@db:5432/imob
+      WEB_CONCURRENCY: "2"
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - media:/app/media
+      - imob_media:/app/media
+    networks:
+      default: {}
+      proxy:
+        aliases:
+          - imob-web
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/healthz/', timeout=4)"]
       interval: 30s
@@ -33,24 +42,11 @@ services:
       retries: 3
       start_period: 40s
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      DOMAIN: ${DOMAIN:?defina DOMAIN no .env}
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - media:/srv/media:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - web
+networks:
+  proxy:
+    external: true
 
 volumes:
   pgdata:
-  media:
-  caddy_data:
-  caddy_config:
+  imob_media:
+    external: true
