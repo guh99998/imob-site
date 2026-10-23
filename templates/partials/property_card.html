@@ -5,14 +5,23 @@
       {% with cover=p.cover %}
         {% if cover %}<img src="{{ cover.src_sm }}" {% if cover.srcset %}srcset="{{ cover.srcset }}" sizes="(min-width:1280px) 400px, (min-width:640px) 45vw, 100vw"{% endif %} alt="{{ cover.caption|default:p.title }}" width="640" height="480" loading="lazy" decoding="async" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]">{% endif %}
       {% endwith %}
-      <span class="absolute top-3 left-3 bg-surface/95 text-fg text-xs font-semibold px-2.5 py-1 rounded-full">{{ p.get_purpose_display }}</span>
-      {% if p.status == "RESERVED" %}<span class="absolute top-3 right-3 bg-danger text-white text-xs font-semibold px-2.5 py-1 rounded-full">Reservado</span>{% endif %}
+      <span class="absolute top-3 left-3 flex flex-wrap gap-1.5">
+        <span class="bg-surface/95 text-fg text-xs font-semibold px-2.5 py-1 rounded-full">{{ p.get_purpose_display }}</span>
+        {% if p.status == "RESERVED" %}<span class="bg-danger text-white text-xs font-semibold px-2.5 py-1 rounded-full">Reservado</span>{% endif %}
+      </span>
+      <span class="absolute bottom-3 left-3 bg-surface/95 text-fg text-xs font-semibold px-2.5 py-1 rounded-full">Cód. {{ p.code }}</span>
     </div>
     <div class="px-4 pt-4 flex-1">
       <p class="text-sm text-muted font-medium">{{ p.category.name }} em {{ p.neighborhood.name }}, {{ p.neighborhood.city.name }}</p>
       <h3 class="card-title font-display text-xl mt-1 line-clamp-2 group-hover:underline decoration-accent decoration-2 underline-offset-4">{{ p.title }}</h3>
-      <p class="font-display text-xl mt-2 text-accent tabular-nums min-h-[1.75rem]">{% if p.display_price %}R$ {{ p.display_price|intcomma }}{% if p.purpose == "RENT" %}<span class="font-sans font-normal text-sm text-fg"> /mês</span>{% endif %}{% endif %}</p>
+      <p class="font-display text-xl mt-2 text-accent tabular-nums min-h-[1.75rem]">
+        {% if price_mode == "SALE" and p.sale_price %}R$ {{ p.sale_price|intcomma }}
+        {% elif price_mode == "RENT" and p.rent_price %}R$ {{ p.rent_price|intcomma }}<span class="font-sans font-normal text-sm text-fg"> /mês</span>
+        {% elif p.purpose == "BOTH" and p.sale_price and p.rent_price %}<span class="block"><span class="font-sans font-normal text-sm text-fg">Venda</span> R$ {{ p.sale_price|intcomma }}</span><span class="block"><span class="font-sans font-normal text-sm text-fg">Aluguel</span> R$ {{ p.rent_price|intcomma }}<span class="font-sans font-normal text-sm text-fg"> /mês</span></span>
+        {% elif p.display_price %}R$ {{ p.display_price|intcomma }}{% if p.purpose == "RENT" %}<span class="font-sans font-normal text-sm text-fg"> /mês</span>{% endif %}{% endif %}
+      </p>
     </div>
   </a>
+  {% include "partials/favorite_button.html" with variant="" %}
   <div class="p-4 pt-3">{% include "partials/property_sheet.html" %}</div>
 </article>

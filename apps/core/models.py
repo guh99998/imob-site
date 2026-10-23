@@ -1,4 +1,3 @@
-from django.core.validators import MaxValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -42,12 +41,6 @@ class SiteSettings(models.Model):
             "Texto enviado ao clicar no WhatsApp de um imóvel. Pode usar {codigo}, {titulo}, "
             "{bairro}, {preco} e {link}."
         ),
-    )
-    max_featured = models.PositiveSmallIntegerField(
-        _("máximo de destaques"),
-        default=3,
-        validators=[MaxValueValidator(3)],
-        help_text=_("Quantos imóveis podem ficar em destaque (a home mostra até 3)."),
     )
 
     class Meta:

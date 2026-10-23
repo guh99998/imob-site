@@ -27,6 +27,15 @@ class Lead(models.Model):
     phone = models.CharField(_("telefone"), max_length=30, blank=True)
     message = models.TextField(_("mensagem"))
     status = models.CharField(_("situação"), max_length=10, choices=Status, default=Status.NEW)
+    client = models.ForeignKey(
+        "crm.Client",
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="leads",
+        verbose_name=_("cliente"),
+    )
     created_at = models.DateTimeField(_("recebido em"), auto_now_add=True)
 
     class Meta:
@@ -78,6 +87,15 @@ class PropertySearch(models.Model):
     notes = models.TextField(_("observações"), blank=True)
     lgpd_consent = models.BooleanField(_("aceite LGPD"), default=False)
     status = models.CharField(_("situação"), max_length=10, choices=Status, default=Status.NEW)
+    client = models.ForeignKey(
+        "crm.Client",
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="searches",
+        verbose_name=_("cliente"),
+    )
     created_at = models.DateTimeField(_("recebida em"), auto_now_add=True)
 
     class Meta:

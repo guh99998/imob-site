@@ -35,11 +35,14 @@
 
       <nav aria-label="Principal" class="hidden lg:flex items-center gap-6 text-[0.95rem] font-medium text-muted">
         {% for item in nav_items %}<a href="{{ item.url }}" class="hover:text-accent{% if request.path == item.path %} text-fg{% endif %}">{{ item.label }}</a>{% endfor %}
+        {% url 'core:favorites' as favorites_url %}<a href="{{ favorites_url }}" class="inline-flex items-center gap-1.5 hover:text-accent{% if request.path == favorites_url %} text-fg{% endif %}">{% include "partials/icons/heart.html" %}Favoritos {% include "partials/favorites_count.html" with count_id="favs-count" %}</a>
         {% if site.whatsapp_digits %}<a href="https://wa.me/{{ site.whatsapp_digits }}" target="_blank" rel="noopener" class="btn !py-2">{% include "partials/icon_whatsapp.html" %}WhatsApp</a>{% endif %}
       </nav>
 
       {# Mobile: <details> funciona sem JS #}
-      <details class="lg:hidden group" id="menu">
+      <div class="lg:hidden flex items-center gap-1">
+      <a href="{% url 'core:favorites' %}" class="inline-flex items-center gap-1 p-2 text-sm font-medium" aria-label="Favoritos">{% include "partials/icons/heart.html" with size=20 %}{% include "partials/favorites_count.html" with count_id="favs-count-m" %}</a>
+      <details class="group" id="menu">
         <summary class="list-none cursor-pointer p-2 -mr-2" aria-label="Abrir menu" aria-controls="menu-painel">
           <svg class="group-open:hidden" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
           <svg class="hidden group-open:block" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg>
@@ -49,6 +52,7 @@
           {% if site.whatsapp_digits %}<a href="https://wa.me/{{ site.whatsapp_digits }}" target="_blank" rel="noopener" class="btn mt-4">{% include "partials/icon_whatsapp.html" %}Falar no WhatsApp</a>{% endif %}
         </nav>
       </details>
+      </div>
     </div>
   </header>
 

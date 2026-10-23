@@ -4,7 +4,7 @@ import environ
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.admin_navigation import site_settings_link
+from apps.core.admin_navigation import followups_link, site_settings_link
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -28,11 +28,15 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "django_htmx",
     "django_filters",
+    "rest_framework",
+    "drf_spectacular",
     "django_tailwind_cli",
     "apps.core",
     "apps.properties",
     "apps.leads",
     "apps.people",
+    "apps.crm",
+    "apps.api",
 ]
 
 MIDDLEWARE = [
@@ -91,8 +95,37 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
+# Máximo de imóveis em destaque (a home mostra até 3).
+MAX_FEATURED = env.int("MAX_FEATURED", default=3)
+
 # Módulos do painel ligados neste site (env FEATURES="brokers,partners,owners,searches").
-SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches"])
+SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches", "crm"])
+
+# API aberta (módulo opcional `api`, desligado por padrão): chaves criadas no painel.
+API_THROTTLE_RATE = env("API_THROTTLE_RATE", default="120/min")
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.api.authentication.ApiKeyAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["apps.api.permissions.ApiEnabled"],
+    "DEFAULT_THROTTLE_CLASSES": ["apps.api.throttles.ApiKeyThrottle"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+        "rest_framework.parsers.FormParser",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "apps.api.pagination.Pagination",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "UNAUTHENTICATED_USER": None,
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "API do site",
+    "DESCRIPTION": (
+        "Envie contatos, consulte e atualize clientes do CRM e leia os imóveis publicados. "
+        "Autentique com o header `Authorization: Api-Key <chave>` (chave criada no painel)."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/v1",
+}
 
 # Crédito no rodapé do site (None desliga).
 DEVELOPER_CREDIT = {
@@ -203,6 +236,43 @@ UNFOLD = {
                 ],
             },
             {
+                "title": _("Clientes"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Clientes"),
+                        "icon": "contacts",
+                        "link": reverse_lazy("admin:crm_client_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_client",
+                    },
+                    {
+                        "title": _("Funil (Kanban)"),
+                        "icon": "view_kanban",
+                        "link": reverse_lazy("admin:crm_client_kanban"),
+                        "permission": "apps.core.admin_navigation.can_view_client",
+                    },
+                    {
+                        "title": _("Retornos"),
+                        "icon": "event_upcoming",
+                        "link": followups_link,
+                        "badge": "apps.core.admin_navigation.overdue_followups_badge",
+                        "permission": "apps.core.admin_navigation.can_view_followup",
+                    },
+                    {
+                        "title": _("Documentos gerados"),
+                        "icon": "description",
+                        "link": reverse_lazy("admin:crm_generateddocument_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_document",
+                    },
+                    {
+                        "title": _("Modelos de documento"),
+                        "icon": "edit_document",
+                        "link": reverse_lazy("admin:crm_documenttemplate_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_documenttemplate",
+                    },
+                ],
+            },
+            {
                 "title": _("Pessoas"),
                 "separator": True,
                 "items": [
@@ -224,6 +294,12 @@ UNFOLD = {
                         "link": reverse_lazy("admin:people_owner_changelist"),
                         "permission": "apps.core.admin_navigation.can_view_owner",
                     },
+                    {
+                        "title": _("Fiadores"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:people_guarantor_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_guarantor",
+                    },
                 ],
             },
             {
@@ -244,6 +320,12 @@ UNFOLD = {
                         "badge": "apps.core.admin_navigation.new_searches_badge",
                         "permission": "apps.core.admin_navigation.can_view_search",
                     },
+                    {
+                        "title": _("Buscas no site"),
+                        "icon": "trending_up",
+                        "link": reverse_lazy("admin:properties_searchquery_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_searchquery",
+                    },
                 ],
             },
             {
@@ -255,6 +337,12 @@ UNFOLD = {
                         "icon": "storefront",
                         "link": site_settings_link,
                         "permission": "apps.core.admin_navigation.can_view_settings",
+                    },
+                    {
+                        "title": _("Chaves de API"),
+                        "icon": "key",
+                        "link": reverse_lazy("admin:api_apikey_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_apikey",
                     },
                     {
                         "title": _("Equipe"),

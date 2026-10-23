@@ -1,0 +1,136 @@
+{% extends 'admin/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<style>
+  .kb-board { display: grid; gap: 1rem; grid-auto-flow: column; grid-auto-columns: minmax(16rem, 1fr); overflow-x: auto; padding-bottom: .5rem; }
+  .kb-col { background: rgb(0 0 0 / .04); border-radius: 4px; display: flex; flex-direction: column; min-height: 12rem; }
+  .kb-col h2 { margin: 0; padding: .75rem 1rem; font-weight: 600; display: flex; justify-content: space-between; }
+  .kb-list { padding: .5rem; display: flex; flex-direction: column; gap: .5rem; flex: 1; min-height: 4rem; }
+  .kb-col.is-over { outline: 2px dashed var(--color-primary-600); }
+  .kb-card { background: var(--color-white, #fff); border: 1px solid rgb(0 0 0 / .12); border-radius: 4px; padding: .75rem; font-size: .875rem; }
+  .kb-card[draggable="true"] { cursor: grab; }
+  .kb-card.is-dragging { opacity: .4; }
+  .kb-card a.kb-name { font-weight: 600; text-decoration: underline; }
+  .kb-late { color: #dc2626; font-weight: 600; }
+  .kb-card select { margin-top: .5rem; width: 100%; font-size: .8rem; }
+  .kb-more { padding: .5rem 1rem; font-size: .8rem; }
+</style>
+
+<form method="get" class="mb-4 flex flex-wrap items-center gap-3">
+  {% if brokers %}
+  <label class="text-sm">Corretor
+    <select name="broker" onchange="this.form.submit()" class="border border-base-200 rounded-default px-2 py-1">
+      <option value="">Todos</option>
+      {% for b in brokers %}<option value="{{ b.pk }}"{% if b.pk|stringformat:"s" == broker_id %} selected{% endif %}>{{ b.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <noscript><button type="submit">Filtrar</button></noscript>
+  {% endif %}
+  <a class="text-sm underline" href="{% url 'admin:crm_client_changelist' %}">Ver em lista</a>
+</form>
+
+<div class="kb-board" id="kb-board" data-csrf="{{ csrf_token }}">
+  {% for col in columns %}
+  <section class="kb-col" data-stage="{{ col.stage.value }}" aria-label="{{ col.stage.label }}">
+    <h2><span>{{ col.stage.label }}</span><span class="kb-count">{{ col.cards|length }}</span></h2>
+    <div class="kb-list">
+      {% for card in col.cards %}
+      {% with c=card.client %}
+      <article class="kb-card" data-id="{{ c.pk }}" data-url="{% url 'admin:crm_client_stage' c.pk %}"{% if can_move %} draggable="true"{% endif %}>
+        <a class="kb-name" href="{% url 'admin:crm_client_change' c.pk %}">{{ c.name }}</a>
+        {% if c.whatsapp %}<p>{{ c.whatsapp }}</p>{% endif %}
+        {% if c.broker %}<p class="opacity-70">{{ c.broker.name }}</p>{% endif %}
+        {% if card.next %}
+          <p class="{% if card.next.due_date < today %}kb-late{% endif %}">Retorno {{ card.next.due_date|date:"d/m/Y" }}{% if card.next.due_date < today %} (atrasado){% endif %}</p>
+        {% endif %}
+        {% if can_move %}
+        <form method="post" action="{% url 'admin:crm_client_stage' c.pk %}" class="kb-move">
+          {% csrf_token %}
+          <label class="sr-only" for="mv-{{ c.pk }}">Mover para…</label>
+          <select id="mv-{{ c.pk }}" name="stage" onchange="this.form.submit()">
+            <option value="">Mover para…</option>
+            {% for value, label in stages %}{% if value != col.stage.value %}<option value="{{ value }}">{{ label }}</option>{% endif %}{% endfor %}
+          </select>
+          <noscript><button type="submit">Mover</button></noscript>
+        </form>
+        {% endif %}
+      </article>
+      {% endwith %}
+      {% empty %}
+      <p class="text-sm opacity-60 px-2">Nenhum cliente.</p>
+      {% endfor %}
+    </div>
+    {% if col.closed %}<p class="kb-more">Últimos {{ closed_days }} dias · <a class="underline" href="{{ col.all_url }}">ver todos</a></p>{% endif %}
+  </section>
+  {% endfor %}
+</div>
+
+{% if can_move %}
+<script>
+(function () {
+  var board = document.getElementById('kb-board');
+  var dragged = null;
+  function recount() {
+    board.querySelectorAll('.kb-col').forEach(function (col) {
+      col.querySelector('.kb-count').textContent = col.querySelectorAll('.kb-card').length;
+    });
+  }
+  board.addEventListener('dragstart', function (e) {
+    var card = e.target.closest && e.target.closest('.kb-card');
+    if (!card) return;
+    dragged = card;
+    card.classList.add('is-dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', card.dataset.id);
+  });
+  board.addEventListener('dragend', function () {
+    if (dragged) dragged.classList.remove('is-dragging');
+    board.querySelectorAll('.is-over').forEach(function (c) { c.classList.remove('is-over'); });
+    dragged = null;
+  });
+  board.addEventListener('dragover', function (e) {
+    var col = e.target.closest('.kb-col');
+    if (!col || !dragged) return;
+    e.preventDefault();
+    col.classList.add('is-over');
+  });
+  board.addEventListener('dragleave', function (e) {
+    var col = e.target.closest('.kb-col');
+    if (col && !col.contains(e.relatedTarget)) col.classList.remove('is-over');
+  });
+  board.addEventListener('drop', function (e) {
+    var col = e.target.closest('.kb-col');
+    if (!col || !dragged) return;
+    e.preventDefault();
+    col.classList.remove('is-over');
+    var card = dragged;
+    var from = card.closest('.kb-list');
+    var to = col.querySelector('.kb-list');
+    if (from === to) return;
+    var empty = to.querySelector('p');
+    if (empty) empty.remove();
+    to.prepend(card);
+    recount();
+    var body = new URLSearchParams({ stage: col.dataset.stage });
+    fetch(card.dataset.url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': board.dataset.csrf, 'X-Requested-With': 'XMLHttpRequest' },
+      body: body
+    }).then(function (r) {
+      if (!r.ok) throw new Error(r.status);
+    }).catch(function () {
+      from.prepend(card);
+      recount();
+      alert('Não foi possível mover o cliente. A página será recarregada.');
+      location.reload();
+    });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

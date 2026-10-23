@@ -5,7 +5,6 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from PIL import Image
 
-from apps.core.models import SiteSettings
 from apps.people.models import Broker
 from apps.properties.models import Property
 
@@ -55,8 +54,8 @@ def test_header_links_to_property_search(client):
     assert "Procuro um imóvel" in html.split("</header>")[0]
 
 
-def test_max_featured_defaults_to_three():
-    assert SiteSettings.load().max_featured == 3
+def test_max_featured_defaults_to_three(settings):
+    assert settings.MAX_FEATURED == 3
 
 
 def test_bulk_photo_upload(admin_client):

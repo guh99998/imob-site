@@ -7,4 +7,5 @@ app_name = "properties"
 urlpatterns = [
     path("", views.property_list, name="list"),
     path("<slug:slug>/", views.property_detail, name="detail"),
+    path("<slug:slug>/favoritar/", views.favorite, name="favorite"),
 ]

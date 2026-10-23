@@ -5,8 +5,14 @@ Site de imobiliária (venda e aluguel) com painel de gestão. Django 6.1, Python
 ## O que tem hoje
 - **Site público:** home com busca completa, lista com filtros e paginação, detalhe do imóvel (galeria, ficha, comodidades), SEO (sitemap, JSON-LD, Open Graph).
 - **Contato:** WhatsApp com mensagem pronta por imóvel (texto editável no painel), botão "Copiar link do imóvel", formulários de interesse, "Procuro um imóvel", "Anuncie seu imóvel" e Contato.
+- **Favoritos:** coração nos cards e no detalhe, página `/favoritos/` e contador no header, sem login (cookie `favs`, funciona sem JS). O painel mostra quantas vezes cada imóvel foi favoritado.
+- **Mais procurados:** a home mostra as buscas mais feitas nos últimos 30 dias (sem dado pessoal, sem robôs); o painel lista a demanda em "Contatos → Buscas no site".
+- **CRM de clientes:** tudo o que entra pelo site (mensagem de imóvel, contato, anúncio, "Procuro um imóvel") vira um cliente sem duplicar (casa por WhatsApp ou email), com histórico, corretor responsável, etapa do funil, retornos agendados (no dashboard e na sidebar) e anonimização (LGPD). O Corretor vê só os próprios clientes.
+- **API aberta (opcional):** `/api/v1/` com chave (`Authorization: Api-Key …`) criada no painel: enviar contatos (sem duplicar cliente), ler/atualizar clientes e histórico, ler imóveis publicados. Documentação em `/api/docs/`. Desligada por padrão: ligue com `FEATURES=…,api`.
+- **Documentos:** termo de visita, proposta, contratos e recibo gerados a partir de modelos editáveis no painel (com valor por extenso), em página A4 para imprimir ou salvar em PDF, com histórico de quem gerou o quê. Modelos-base de exemplo: `manage.py seed_document_templates`.
+- **Duplicados:** ao salvar um imóvel o painel avisa se ele repete outro (mesmo CEP, número e complemento, ou características parecidas); coluna e filtro na lista, ação "Marcar como não duplicado" e comando `find_duplicates` para varrer o estoque.
 - **Painel (`/admin/`):** imóveis com código automático por categoria, fotos em lote, máscaras, pesquisa avançada, mensagem pronta para o cliente, leads e procuras, corretores/parceiros/proprietários com funções e auditoria.
-- **Módulos opcionais por site:** variável `FEATURES` (`brokers`, `partners`, `owners`, `searches`).
+- **Módulos opcionais por site:** variável `FEATURES` (`brokers`, `partners`, `owners`, `searches`, `crm`, `api`; a `api` vem desligada).
 
 ## Como rodar (desenvolvimento)
 ```bash
@@ -26,6 +32,8 @@ Site em http://localhost:8000 e painel em http://localhost:8000/admin/.
 | Testes | `uv run pytest` |
 | Lint e formato | `uv run ruff check . --fix && uv run ruff format .` |
 | Migrations | `uv run python manage.py makemigrations && uv run python manage.py migrate` |
+| Modelos de documentos | `uv run python manage.py seed_document_templates` |
+| Varrer duplicados | `uv run python manage.py find_duplicates` |
 | Tailwind (prod) | `uv run python manage.py tailwind build && uv run python manage.py collectstatic` |
 
 ## Estrutura
@@ -33,6 +41,8 @@ Site em http://localhost:8000 e painel em http://localhost:8000/admin/.
 apps/core         configurações do site, home, painel (dashboard, máscaras, features)
 apps/properties   imóveis, categorias, cidades/bairros, busca e filtros
 apps/leads        contatos, anúncios e procuras de clientes
+apps/crm          clientes, histórico, retornos e captação automática
+apps/api          chaves de API e endpoints /api/v1/
 apps/people       corretores, parceiros, proprietários, funções e auditoria
 imob_site/settings  base, dev e prod
 templates/  frontend/  static/
@@ -54,9 +64,15 @@ Spec-driven: toda feature nasce em `specs/NNN-nome.md` (copiar `specs/000-templa
 ## Roadmap
 Plano em `plans/plano-016-022-novas-funcoes.md`:
 - [x] 016 — WhatsApp com mensagem pronta, copiar link, crédito do desenvolvedor
-- [ ] 017 — Favoritos (cookie, sem login)
-- [ ] 018 — Buscas populares na home
-- [ ] 019 — Detecção de imóveis duplicados
-- [ ] 020 — CRM de clientes
-- [ ] 021 — API aberta do CRM
-- [ ] 022 — Modelos de documentos (visita, contrato, recibo)
+- [x] 017 — Favoritos (cookie, sem login)
+- [x] 018 — Buscas populares na home
+- [x] 019 — Detecção de imóveis duplicados
+- [x] 020 — CRM de clientes
+- [x] 021 — API aberta do CRM
+- [x] 022 — Modelos de documentos (visita, contrato, recibo)
+- [x] 023 — Ajustes do site/painel (link Retornos, `MAX_FEATURED` no .env, código no card, preço por seção)
+- [x] 024 — Histórico do cliente em linha do tempo com "Registrar interação"
+- [x] 025 — Kanban de clientes (arrastar e soltar, últimos 30 dias em Fechado/Perdido)
+- [x] 026 — Qualificação das partes (cliente, proprietário, fiador), cônjuge e avisos nos contratos
+
+Plano em `plans/plano-023-027-ajustes-kanban-contratos.md` (024 histórico, 025 Kanban, 026 partes do contrato).

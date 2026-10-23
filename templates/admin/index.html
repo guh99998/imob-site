@@ -85,6 +85,23 @@
     </section>
   </div>
 
+  {% if followups is not None %}
+  <section class="dlm-panel">
+    <h2>{% trans "Retornos de hoje e atrasados" %}</h2>
+    <ul>
+      {% for f in followups %}
+        <li>
+          <a href="{% url 'admin:crm_client_change' f.client_id %}">{{ f.client.name }}</a>
+          <span>{{ f.note }}</span>
+          <small>{% if f.is_overdue %}<strong>{% trans "Atrasado" %}</strong> · {% endif %}{{ f.due_date|date:"d/m/Y" }}</small>
+        </li>
+      {% empty %}
+        <li class="dlm-empty">{% trans "Nenhum retorno para hoje." %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
   {% if activity %}
   <section class="dlm-panel mt-6">
     <h2>{% trans "Atividade recente" %}</h2>

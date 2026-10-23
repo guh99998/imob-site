@@ -1,0 +1,21 @@
+{# Alterna o favorito. Sem JS é um POST comum com redirect; com HTMX troca só este form. #}
+<form method="post" action="{% url 'properties:favorite' p.slug %}"
+      hx-post="{% url 'properties:favorite' p.slug %}" hx-target="this" hx-swap="outerHTML"
+      class="{% if variant == 'full' %}mt-3{% else %}absolute top-3 right-3 z-10{% endif %}">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next|default:request.get_full_path }}">
+  <input type="hidden" name="variant" value="{{ variant }}">
+  {% if p.code in favorite_codes %}
+    {% if variant == "full" %}
+    <button type="submit" aria-pressed="true" class="w-full flex items-center justify-center gap-2 border border-accent text-accent rounded-md py-2.5 font-medium hover:bg-accent-soft">{% include "partials/icons/heart-fill.html" with size=18 %}Salvo nos favoritos</button>
+    {% else %}
+    <button type="submit" aria-pressed="true" aria-label="Remover {{ p.code }} dos favoritos" title="Remover dos favoritos" class="w-10 h-10 rounded-full bg-surface/95 text-accent shadow flex items-center justify-center hover:scale-105 transition-transform">{% include "partials/icons/heart-fill.html" with size=18 %}</button>
+    {% endif %}
+  {% else %}
+    {% if variant == "full" %}
+    <button type="submit" aria-pressed="false" class="w-full flex items-center justify-center gap-2 border border-line rounded-md py-2.5 font-medium hover:border-accent hover:text-accent">{% include "partials/icons/heart.html" with size=18 %}Salvar nos favoritos</button>
+    {% else %}
+    <button type="submit" aria-pressed="false" aria-label="Salvar {{ p.code }} nos favoritos" title="Salvar nos favoritos" class="w-10 h-10 rounded-full bg-surface/95 text-fg shadow flex items-center justify-center hover:text-accent hover:scale-105 transition-transform">{% include "partials/icons/heart.html" with size=18 %}</button>
+    {% endif %}
+  {% endif %}
+</form>

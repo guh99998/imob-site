@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ doc.title }}{% if doc.client %} — {{ doc.client.name }}{% endif %}</title>
+  <style>
+    @page { size: A4; margin: 20mm 18mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #e4e4e7; color: #18181b; font: 12pt/1.55 Georgia, "Times New Roman", serif; }
+    .bar { position: sticky; top: 0; display: flex; gap: .75rem; justify-content: center; padding: .75rem; background: #18181b; font-family: system-ui, sans-serif; }
+    .bar button, .bar a { font: 600 .95rem system-ui, sans-serif; padding: .55rem 1.1rem; border-radius: 6px; border: 0; cursor: pointer; text-decoration: none; background: #6d28d9; color: #fff; }
+    .bar a { background: #fff; color: #18181b; }
+    .page { width: 210mm; min-height: 297mm; margin: 1.5rem auto; padding: 20mm 18mm; background: #fff; box-shadow: 0 2px 12px rgb(0 0 0 / .15); }
+    header { display: flex; align-items: center; gap: 1rem; border-bottom: 1px solid #a1a1aa; padding-bottom: .75rem; margin-bottom: 1.5rem; font-family: system-ui, sans-serif; font-size: 10pt; }
+    header img { height: 42px; width: auto; }
+    header strong { display: block; font-size: 12pt; }
+    h2 { text-align: center; font-size: 15pt; letter-spacing: .04em; margin: 0 0 1.25rem; }
+    p { margin: 0 0 .9rem; text-align: justify; }
+    @media print {
+      body { background: #fff; }
+      .bar { display: none; }
+      .page { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+    }
+    @media (max-width: 800px) { .page { width: auto; min-height: 0; margin: 0; padding: 1.25rem; } }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+    <a href="{{ back }}">Voltar</a>
+  </div>
+  <main class="page">
+    <header>
+      {% if site.logo %}<img src="{{ site.logo.url }}" alt="{{ site.name }}">{% endif %}
+      <div>
+        <strong>{{ site.name }}</strong>
+        {% if site.creci %}CRECI {{ site.creci }}{% endif %}{% if site.cnpj %} · CNPJ {{ site.cnpj }}{% endif %}
+        {% if site.phone or site.email %}<br>{{ site.phone }}{% if site.phone and site.email %} · {% endif %}{{ site.email }}{% endif %}
+      </div>
+    </header>
+    {{ doc.html|safe }}
+  </main>
+</body>
+</html>

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import Count, Q
 from django.shortcuts import render
 from django.urls import reverse
@@ -7,6 +8,7 @@ from apps.leads.models import Lead
 from apps.leads.views import lead_page
 from apps.properties.filters import grouped_categories
 from apps.properties.models import PUBLIC_STATUSES, Category, City, Neighborhood, Property
+from apps.properties.searches import popular
 
 from . import seo
 from .models import SiteSettings
@@ -21,7 +23,7 @@ def home(request):
         .select_related("category", "neighborhood__city")
         .prefetch_related("photos")
     )
-    featured = list(qs.filter(is_featured=True)[: site.max_featured])
+    featured = list(qs.filter(is_featured=True)[: settings.MAX_FEATURED])
     categories = list(
         Category.objects.annotate(total=Count("properties", filter=PUBLIC))
         .filter(total__gt=0)
@@ -57,6 +59,7 @@ def home(request):
             "listing_action": reverse("core:advertise"),
             "cities": cities,
             "neighborhoods": neighborhoods,
+            "popular_searches": popular(),
         },
     )
 

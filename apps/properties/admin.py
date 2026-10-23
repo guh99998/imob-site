@@ -1,10 +1,11 @@
 from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
@@ -12,9 +13,10 @@ from unfold.decorators import action, display
 from apps.core.admin_filters import AdvancedSearchMixin, dropdown_filter
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import enabled
-from apps.core.models import SiteSettings
+from apps.crm import documents as crm_documents
 from apps.people.scoping import ScopedByRoleMixin, is_scoped
 
+from . import duplicates
 from .models import (
     PUBLIC_STATUSES,
     Category,
@@ -23,6 +25,7 @@ from .models import (
     Neighborhood,
     Property,
     PropertyPhoto,
+    SearchQuery,
 )
 
 STATUS_LABELS = {
@@ -42,7 +45,7 @@ def format_brl(value):
 class CategoryAdmin(ModelAdmin):
     list_display = ("name", "code_prefix", "properties_count")
     search_fields = ("name",)
-    fields = ("name", "code_prefix", "order", "icon")
+    fields = ("name", "code_prefix", "order")
     ordering_field = "order"
     hide_ordering_field = True
 
@@ -89,7 +92,7 @@ class NeighborhoodAdmin(AdvancedSearchMixin, ModelAdmin):
 
 @admin.register(Feature)
 class FeatureAdmin(ModelAdmin):
-    list_display = ("name", "icon")
+    list_display = ("name",)
     search_fields = ("name",)
 
 
@@ -155,7 +158,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         "area_built": "area",
         "zip_code": "cep",
     }
-    readonly_fields = ("code_display", "audit_created", "audit_updated")
+    readonly_fields = ("code_display", "audit_created", "audit_updated", "favorites_count")
     list_display = (
         "cover_preview",
         "code",
@@ -163,10 +166,12 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         "category",
         "price",
         "status_badge",
+        "duplicate_badge",
+        "favorites_count",
         "is_featured",
     )
     list_display_links = ("code", "title")
-    list_filter = ("status", "purpose", "category", "neighborhood__city")
+    list_filter = ("status", "purpose", "category", "neighborhood__city", "duplicate_hint")
     list_editable = ("is_featured",)
     list_select_related = ("category", "neighborhood__city")
     search_fields = ("code", "title", "street", "neighborhood__name")
@@ -175,8 +180,9 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     filter_horizontal = ("features",)
     form = PropertyAdminForm
     inlines = [PropertyPhotoInline]
-    actions = ["publish", "mark_sold", "mark_rented", "feature"]
-    actions_row = ["view_on_site_action"]
+    actions = ["publish", "mark_sold", "mark_rented", "feature", "dismiss_duplicates"]
+    actions_row = ["view_on_site_action", "generate_document_row"]
+    actions_detail = ["generate_document_detail"]
     warn_unsaved_form = True
     change_form_after_template = "admin/properties/client_message.html"
     fieldsets = (
@@ -243,7 +249,13 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         fieldsets.append((_("Responsáveis"), {"classes": ["tab"], "fields": people}))
         if obj is not None:
             fieldsets.append(
-                (_("Registro"), {"classes": ["tab"], "fields": ("audit_created", "audit_updated")})
+                (
+                    _("Registro"),
+                    {
+                        "classes": ["tab"],
+                        "fields": ("audit_created", "audit_updated", "favorites_count"),
+                    },
+                )
             )
         return fieldsets
 
@@ -276,6 +288,37 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         if is_scoped(request.user) and not obj.broker_id:
             obj.broker = getattr(request.user, "broker", None)
         super().save_model(request, obj, form, change)
+        self.warn_duplicates(request, obj)
+
+    def warn_duplicates(self, request, obj):
+        """Aviso (não bloqueia): pode ser outra unidade do mesmo prédio."""
+        matches = duplicates.refresh_hints(obj)
+        if not matches:
+            return
+        if is_scoped(request.user):  # o Corretor não vê imóveis dos outros
+            self.message_user(
+                request,
+                _("Já existe no sistema um imóvel parecido com este. Fale com o gerente."),
+                messages.WARNING,
+            )
+            return
+        links = format_html_join(
+            ", ",
+            '<a href="{}" class="underline">{}</a> ({})',
+            (
+                (
+                    reverse("admin:properties_property_change", args=[m.pk]),
+                    f"{m.code} – {m.title}",
+                    duplicates.LEVEL_LABELS[level],
+                )
+                for m, level in matches[:5]
+            ),
+        )
+        self.message_user(
+            request,
+            format_html("{} {}", _("Possível duplicado de:"), links),
+            messages.WARNING,
+        )
 
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
@@ -324,6 +367,10 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     def status_badge(self, obj):
         return obj.status, obj.get_status_display()
 
+    @display(description=_("duplicado?"), ordering="duplicate_hint", label={True: "warning"})
+    def duplicate_badge(self, obj):
+        return (True, _("Possível")) if obj.duplicate_hint else "-"
+
     @display(description=_("capa"))
     def cover_preview(self, obj):
         cover = obj.cover
@@ -361,6 +408,27 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
             )
         return super().render_change_form(request, context, add, change, form_url, obj)
 
+    def has_generate_document_permission(self, request, object_id=None):
+        return crm_documents.can_generate(request)
+
+    @action(
+        description=_("Gerar documento"),
+        url_path="gerar-documento",
+        permissions=["generate_document"],
+    )
+    def generate_document_row(self, request, object_id):
+        prop = get_object_or_404(self.get_queryset(request), pk=object_id)
+        return redirect(crm_documents.new_document_url(property=prop))
+
+    @action(
+        description=_("Gerar documento"),
+        url_path="gerar-documento-detalhe",
+        permissions=["generate_document"],
+    )
+    def generate_document_detail(self, request, object_id):
+        prop = get_object_or_404(self.get_queryset(request), pk=object_id)
+        return redirect(crm_documents.new_document_url(property=prop))
+
     @action(description=_("Ver no site"), url_path="ver-no-site")
     def view_on_site_action(self, request, object_id):
         prop = get_object_or_404(Property, pk=object_id)
@@ -383,9 +451,16 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     def mark_rented(self, request, queryset):
         queryset.update(status=Property.Status.RENTED)
 
+    @admin.action(description=_("Marcar como não duplicado"), permissions=["change"])
+    def dismiss_duplicates(self, request, queryset):
+        pairs = duplicates.dismiss(request.user, queryset)
+        self.message_user(
+            request, _("%d par(es) marcado(s) como não duplicado.") % pairs, messages.SUCCESS
+        )
+
     @admin.action(description=_("Destacar selecionados"))
     def feature(self, request, queryset):
-        limit = SiteSettings.load().max_featured
+        limit = settings.MAX_FEATURED
         current = Property.objects.filter(is_featured=True, status__in=PUBLIC_STATUSES).count()
         to_add = queryset.filter(is_featured=False, status__in=PUBLIC_STATUSES).count()
         if current + to_add > limit:
@@ -393,10 +468,27 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
                 request,
                 _(
                     "Limite de %(limit)d destaques. Hoje há %(current)d; tire o destaque de "
-                    "algum imóvel antes (ou aumente o limite em Configurações)."
+                    "algum imóvel antes."
                 )
                 % {"limit": limit, "current": current},
                 messages.ERROR,
             )
             return
         queryset.update(is_featured=True)
+
+
+@admin.register(SearchQuery)
+class SearchQueryAdmin(ModelAdmin):
+    """Só leitura: o que os visitantes mais procuram no site (dado de demanda)."""
+
+    list_display = ("label", "count", "results", "last_searched_at")
+    search_fields = ("label",)
+    search_help_text = _("Buscar pelo texto da busca")
+    ordering = ("-count", "-last_searched_at")
+    list_per_page = 50
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

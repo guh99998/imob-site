@@ -12,6 +12,7 @@ sitemaps = {"static": StaticSitemap, "landings": LandingSitemap, "properties": P
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
+    path("api/", include("apps.api.urls")),
     path("imoveis/", include("apps.properties.urls")),
     path("", include("apps.leads.urls")),
     path("", include("apps.core.urls")),

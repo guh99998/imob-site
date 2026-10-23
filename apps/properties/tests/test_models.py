@@ -155,12 +155,8 @@ def test_default_categories_created_by_data_migration():
     assert {"Sobrado", "Studio/Kitnet", "Galpão", "Fazenda"} <= set(names)
 
 
-def test_featured_limit_enforced_in_clean():
-    from apps.core.models import SiteSettings
-
-    site = SiteSettings.load()
-    site.max_featured = 2
-    site.save()
+def test_featured_limit_enforced_in_clean(settings):
+    settings.MAX_FEATURED = 2
     PropertyFactory.create_batch(2, is_featured=True)
     extra = PropertyFactory(is_featured=False)
     extra.is_featured = True

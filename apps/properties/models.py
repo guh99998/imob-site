@@ -65,12 +65,6 @@ class Category(models.Model):
     order = models.PositiveSmallIntegerField(
         _("ordem"), default=0, help_text=_("Categorias com número menor aparecem primeiro.")
     )
-    icon = models.CharField(
-        _("ícone"),
-        max_length=50,
-        blank=True,
-        help_text=_("Opcional. Nome de um ícone do Material Symbols (ex.: home)."),
-    )
     code_prefix = models.CharField(
         _("prefixo do código"),
         max_length=2,
@@ -150,7 +144,6 @@ class Neighborhood(models.Model):
 
 class Feature(models.Model):
     name = models.CharField(_("nome"), max_length=80, unique=True)
-    icon = models.CharField(_("ícone"), max_length=50, blank=True)
 
     class Meta:
         verbose_name = _("comodidade")
@@ -324,6 +317,18 @@ class Property(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     published_at = models.DateTimeField(_("publicado em"), null=True, blank=True)
+    duplicate_hint = models.BooleanField(
+        _("possível duplicado"),
+        default=False,
+        editable=False,
+        help_text=_("Calculado ao salvar: há outro imóvel parecido no estoque."),
+    )
+    favorites_count = models.PositiveIntegerField(
+        _("favoritos"),
+        default=0,
+        editable=False,
+        help_text=_("Quantas vezes o imóvel foi salvo nos favoritos do site."),
+    )
 
     objects = PropertyQuerySet.as_manager()
 
@@ -355,15 +360,13 @@ class Property(models.Model):
         if self.purpose in (self.Purpose.RENT, self.Purpose.BOTH) and not self.rent_price:
             errors["rent_price"] = _("Informe o valor do aluguel.")
         if self.is_featured and self.status in PUBLIC_STATUSES:
-            from apps.core.models import SiteSettings
-
-            limit = SiteSettings.load().max_featured
+            limit = settings.MAX_FEATURED
             others = Property.objects.filter(is_featured=True, status__in=PUBLIC_STATUSES)
             if self.pk:
                 others = others.exclude(pk=self.pk)
             if others.count() >= limit:
                 errors["is_featured"] = _(
-                    "Já existem %(n)d imóveis em destaque (limite das configurações). "
+                    "Já existem %(n)d imóveis em destaque (limite do site). "
                     "Tire o destaque de outro imóvel primeiro."
                 ) % {"n": limit}
         if errors:
@@ -390,6 +393,14 @@ class Property(models.Model):
         if self.purpose == self.Purpose.RENT:
             return self.rent_price
         return self.sale_price or self.rent_price
+
+    def price_for(self, purpose):
+        """Preço da seção (venda/aluguel) em que o imóvel aparece; None se não houver seção."""
+        if purpose == self.Purpose.RENT:
+            return self.rent_price
+        if purpose == self.Purpose.SALE:
+            return self.sale_price
+        return None
 
     def share_url(self, request=None, source=None):
         path = self.get_absolute_url()
@@ -508,3 +519,42 @@ class PropertyPhoto(models.Model):
         img.save(buf, format=fmt, quality=85)
         name = self.image.name.rsplit(".", 1)[0] + (".png" if fmt == "PNG" else ".jpg")
         self.image.save(name, ContentFile(buf.getvalue()), save=False)
+
+
+class SearchQuery(models.Model):
+    """Busca feita no site (só filtros, nada pessoal), para o "Mais procurados" e o painel."""
+
+    key = models.CharField(_("chave"), max_length=300, unique=True)
+    label = models.CharField(_("busca"), max_length=200)
+    count = models.PositiveIntegerField(_("vezes"), default=0)
+    results = models.PositiveIntegerField(_("imóveis encontrados"), default=0)
+    last_searched_at = models.DateTimeField(_("última vez"), default=timezone.now)
+
+    class Meta:
+        verbose_name = _("busca no site")
+        verbose_name_plural = _("buscas no site")
+        ordering = ["-count", "-last_searched_at"]
+
+    def __str__(self):
+        return self.label
+
+
+class DuplicateDismissal(models.Model):
+    """Par de imóveis que o usuário confirmou que NÃO são duplicados (sempre a.pk < b.pk)."""
+
+    property_a = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="+")
+    property_b = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="+")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("par não duplicado")
+        verbose_name_plural = _("pares não duplicados")
+        constraints = [
+            models.UniqueConstraint(fields=["property_a", "property_b"], name="dismissal_unique")
+        ]
+
+    def __str__(self):
+        return f"{self.property_a_id} x {self.property_b_id}"

@@ -13,11 +13,29 @@ ROLE_CHOICES = [
 ]
 ROLE_NAMES = [name for name, _label in ROLE_CHOICES]
 
-APP_LABELS = ("core", "properties", "leads", "people", "auth")
+APP_LABELS = ("core", "properties", "leads", "people", "crm", "api", "auth")
 
 
 def _perms(*codenames):
     return Permission.objects.filter(codename__in=codenames)
+
+
+CRM_DAILY = (
+    "view_client",
+    "add_client",
+    "change_client",
+    "view_interaction",
+    "add_interaction",
+    "change_interaction",
+    "delete_interaction",
+    "view_followup",
+    "add_followup",
+    "change_followup",
+    "delete_followup",
+    "view_documenttemplate",
+    "view_generateddocument",
+    "add_generateddocument",
+)
 
 
 def _permissions_for(role):
@@ -25,7 +43,7 @@ def _permissions_for(role):
     if role == ADMIN:
         return everything
     if role == MANAGER:
-        return everything.exclude(content_type__app_label__in=("core", "auth"))
+        return everything.exclude(content_type__app_label__in=("core", "auth", "api"))
     lookups = _perms(
         "view_category", "view_city", "view_neighborhood", "view_feature", "view_property"
     )
@@ -43,12 +61,16 @@ def _permissions_for(role):
                 "view_owner",
                 "add_owner",
                 "change_owner",
+                "view_guarantor",
+                "add_guarantor",
+                "change_guarantor",
                 "view_partner",
                 "add_partner",
                 "change_partner",
                 "view_broker",
                 "view_propertysearch",
                 "change_propertysearch",
+                *CRM_DAILY,
             )
         ).distinct()
     return (
@@ -59,6 +81,7 @@ def _permissions_for(role):
             "view_broker",
             "view_propertysearch",
             "change_propertysearch",
+            *CRM_DAILY,
         )
     ).distinct()
 

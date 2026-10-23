@@ -15,6 +15,8 @@ dependencies = [
     "gunicorn",
     "django-storages[s3]",
     "django-unfold>=0.110.0",
+    "djangorestframework>=3.18.3",
+    "drf-spectacular>=0.30.0",
 ]
 
 [dependency-groups]
@@ -43,3 +45,6 @@ extend-exclude = ["migrations"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "DJ"]
 ignore = ["DJ001"]
+
+[tool.ruff.lint.per-file-ignores]
+"apps/crm/base_templates.py" = ["E501"]  # texto dos modelos de documento

@@ -2,7 +2,7 @@
 
 from django.conf import settings
 
-ALL = ("brokers", "partners", "owners", "searches")
+ALL = ("brokers", "partners", "owners", "searches", "crm")
 
 
 def enabled(name):

@@ -10,7 +10,8 @@ from apps.core.admin_filters import AdvancedSearchMixin
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import FeatureGatedAdminMixin
 
-from .models import Broker, Owner, Partner
+from .models import Broker, Guarantor, Owner, Partner
+from .scoping import is_scoped
 
 
 class LinkedPropertiesMixin:
@@ -99,12 +100,91 @@ class PartnerAdmin(FeatureGatedAdminMixin, LinkedPropertiesMixin, MaskedAdminMix
     )
 
 
+QUALIFICATION_MASKS = {
+    "cpf": "cpf_cnpj",
+    "spouse_cpf": "cpf_cnpj",
+    "zip_code": "cep",
+    "state": "uf",
+}
+QUALIFICATION_FIELDSETS = (
+    (
+        _("Qualificação (para contratos)"),
+        {
+            "fields": (
+                "cpf",
+                "nationality",
+                "marital_status",
+                "profession",
+                ("zip_code", "street", "number"),
+                ("complement", "neighborhood"),
+                ("city", "state"),
+            )
+        },
+    ),
+    (
+        _("Cônjuge"),
+        {
+            "description": _("Obrigatório quando casado(a) ou em união estável."),
+            "fields": (
+                "spouse_status",
+                "spouse_name",
+                "spouse_cpf",
+                "spouse_nationality",
+                "spouse_profession",
+            ),
+        },
+    ),
+)
+
+
+class SpouseStatusMixin:
+    """Aviso na ficha: pessoa casada sem cônjuge cadastrado (não bloqueia o salvamento)."""
+
+    @display(description=_("situação do cônjuge"))
+    def spouse_status(self, obj):
+        if obj and obj.pk and obj.spouse_missing:
+            return format_html(
+                '<span class="text-red-600 font-semibold">{}</span>',
+                _("Casado(a): informe nome e CPF do cônjuge para o contrato ser válido."),
+            )
+        return "-"
+
+
 @admin.register(Owner)
-class OwnerAdmin(FeatureGatedAdminMixin, LinkedPropertiesMixin, MaskedAdminMixin, ModelAdmin):
+class OwnerAdmin(
+    FeatureGatedAdminMixin, LinkedPropertiesMixin, SpouseStatusMixin, MaskedAdminMixin, ModelAdmin
+):
     feature = "owners"
     property_filter = "owner"
-    masks = {"phone": "phone", "document": "cpf_cnpj"}
+    masks = {"phone": "phone", "document": "cpf_cnpj", **QUALIFICATION_MASKS}
     list_display = ("name", "document", "phone", "properties_count")
-    search_fields = ("name", "document", "email")
-    readonly_fields = ("linked_properties",)
-    fields = ("name", "document", "phone", "email", "notes", "linked_properties")
+    search_fields = ("name", "document", "cpf", "email")
+    readonly_fields = ("linked_properties", "spouse_status")
+    fieldsets = (
+        (None, {"fields": ("name", "document", "phone", "email", "notes", "linked_properties")}),
+        *QUALIFICATION_FIELDSETS,
+    )
+
+
+@admin.register(Guarantor)
+class GuarantorAdmin(FeatureGatedAdminMixin, SpouseStatusMixin, MaskedAdminMixin, ModelAdmin):
+    """Fiadores de locação. O Corretor só enxerga os que cadastrou."""
+
+    feature = "owners"
+    masks = {"phone": "phone", **QUALIFICATION_MASKS}
+    list_display = ("name", "cpf", "phone", "marital_status")
+    search_fields = ("name", "cpf", "email")
+    readonly_fields = ("spouse_status",)
+    fieldsets = (
+        (None, {"fields": ("name", "phone", "email", "notes")}),
+        *QUALIFICATION_FIELDSETS,
+    )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(created_by=request.user) if is_scoped(request.user) else qs
+
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)

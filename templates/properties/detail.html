@@ -102,6 +102,7 @@
          href="https://wa.me/{{ site.whatsapp_digits }}?text={{ whatsapp_text|urlencode }}"
          class="btn w-full mt-5">Falar no WhatsApp</a>
       {% endif %}
+      {% include "partials/favorite_button.html" with p=property variant="full" %}
       <a data-share href="{{ share_url }}"
          class="flex items-center justify-center gap-2 underline text-sm mt-3">{% include "partials/icons/share.html" %}Copiar link do imóvel</a>
       <p data-share-feedback class="text-sm text-center text-muted mt-1" role="status" aria-live="polite"></p>
