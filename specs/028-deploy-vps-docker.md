@@ -31,4 +31,6 @@ CI/CD, múltiplos servidores, S3 (já suportado por variáveis, só documentado)
 - [x] Deploy real na VPS (Debian, Hostinger) com HTTPS
 - [x] Script de backup; README
 - [ ] Testar restauração do backup; agendar no cron
-- [ ] CI/CD (GitHub Actions + GHCR)
+- [x] Backup criptografado fora da VPS (rclone + R2), restauração testada
+- [x] Hardening: unattended-upgrades, fail2ban
+- [ ] CI/CD (GitHub Actions + GHCR): workflow escrito; falta validar a primeira execução na `main` e o `docker compose pull` na VPS

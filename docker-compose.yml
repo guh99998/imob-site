@@ -18,6 +18,8 @@ services:
       retries: 5
 
   web:
+    # imagem pronta do CI (docker compose pull); build local continua possível (--build)
+    image: ghcr.io/guh99998/imob-site:latest
     build: .
     restart: unless-stopped
     mem_limit: 640m
