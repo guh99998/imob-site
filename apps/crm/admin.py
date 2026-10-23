@@ -1,21 +1,28 @@
 from urllib.parse import urlencode
 
+from django import forms
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
+from django.template.response import TemplateResponse
+from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
+from unfold.widgets import UnfoldAdminSelectWidget
 
 from apps.core.admin_filters import AdvancedSearchMixin
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import FeatureGatedAdminMixin
-from apps.people.scoping import ScopedByRoleMixin, is_scoped
+from apps.core.models import SiteSettings
+from apps.people.scoping import ScopedByRoleMixin, is_scoped, own_properties_q
+from apps.properties.models import Property
 
-from . import services
-from .models import Client, FollowUp, Interaction
+from . import documents, services
+from .models import Client, DocumentTemplate, FollowUp, GeneratedDocument, Interaction
 
 STAGE_LABELS = {
     Client.Stage.NEW: "warning",
@@ -83,8 +90,8 @@ class ClientAdmin(
     search_help_text = _("Buscar por nome, WhatsApp, email ou etiqueta")
     readonly_fields = ("lgpd_consent_at", "anonymized_at", "audit_created", "audit_updated")
     inlines = [InteractionInline, FollowUpInline]
-    actions_row = ["matching_row"]
-    actions_detail = ["matching_detail"]
+    actions_row = ["matching_row", "generate_document_row"]
+    actions_detail = ["matching_detail", "generate_document_detail"]
     warn_unsaved_form = True
     actions = [
         *[f"move_to_{s.lower()}" for s in Client.Stage.values],
@@ -199,6 +206,27 @@ class ClientAdmin(
     def matching_detail(self, request, object_id):
         return self._matching_redirect(get_object_or_404(self.get_queryset(request), pk=object_id))
 
+    def has_generate_document_permission(self, request, object_id=None):
+        return documents.can_generate(request)
+
+    @action(
+        description=_("Gerar documento"),
+        url_path="gerar-documento",
+        permissions=["generate_document"],
+    )
+    def generate_document_row(self, request, object_id):
+        client = get_object_or_404(self.get_queryset(request), pk=object_id)
+        return redirect(documents.new_document_url(client=client))
+
+    @action(
+        description=_("Gerar documento"),
+        url_path="gerar-documento-detalhe",
+        permissions=["generate_document"],
+    )
+    def generate_document_detail(self, request, object_id):
+        client = get_object_or_404(self.get_queryset(request), pk=object_id)
+        return redirect(documents.new_document_url(client=client))
+
     @admin.action(description=_("Atribuir a mim"))
     def assign_to_me(self, request, queryset):
         broker = getattr(request.user, "broker", None)
@@ -252,3 +280,128 @@ class FollowUpAdmin(AdvancedSearchMixin, FeatureGatedAdminMixin, ScopedByRoleMix
     def mark_done(self, request, queryset):
         n = queryset.filter(done=False).update(done=True, done_at=timezone.now())
         self.message_user(request, _("%d retorno(s) marcado(s) como feito(s).") % n)
+
+
+@admin.register(DocumentTemplate)
+class DocumentTemplateAdmin(FeatureGatedAdminMixin, ModelAdmin):
+    feature = "crm"
+    list_display = ("name", "kind", "description", "active", "updated_at")
+    list_filter = ("kind", "is_active")
+    search_fields = ("name", "description", "body")
+    search_help_text = _("Buscar pelo nome ou pelo texto do modelo")
+
+    @display(description=_("ativo"), boolean=True, ordering="is_active")
+    def active(self, obj):
+        return obj.is_active
+
+
+class DocumentForm(forms.Form):
+    template = forms.ModelChoiceField(
+        label=_("Documento"),
+        queryset=DocumentTemplate.objects.filter(is_active=True),
+        empty_label=_("Escolha o modelo"),
+        widget=UnfoldAdminSelectWidget,
+    )
+    client = forms.ModelChoiceField(
+        label=_("Cliente"),
+        queryset=Client.objects.none(),
+        required=False,
+        empty_label=_("(sem cliente)"),
+        widget=UnfoldAdminSelectWidget,
+    )
+    property = forms.ModelChoiceField(
+        label=_("Imóvel"),
+        queryset=Property.objects.none(),
+        required=False,
+        empty_label=_("(sem imóvel)"),
+        widget=UnfoldAdminSelectWidget,
+    )
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        clients = Client.objects.filter(anonymized_at__isnull=True).order_by("name")
+        properties = Property.objects.select_related("neighborhood").order_by("code")
+        if is_scoped(user):
+            clients = clients.filter(own_properties_q(user)).distinct()
+            properties = properties.filter(own_properties_q(user)).distinct()
+        self.fields["client"].queryset = clients
+        self.fields["property"].queryset = properties
+
+
+@admin.register(GeneratedDocument)
+class GeneratedDocumentAdmin(FeatureGatedAdminMixin, ModelAdmin):
+    """Histórico (só leitura) + as telas de gerar e imprimir."""
+
+    feature = "crm"
+    list_display = ("title", "client", "property", "generated_by", "created_at", "print_link")
+    list_filter = ("template__kind", "created_at")
+    list_select_related = ("client", "property", "generated_by")
+    search_fields = ("title", "client__name", "property__code", "property__title")
+    search_help_text = _("Buscar por documento, cliente ou imóvel")
+    readonly_fields = ("title", "client", "property", "generated_by", "created_at", "preview")
+    fields = ("title", "client", "property", "generated_by", "created_at", "preview")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(generated_by=request.user) if is_scoped(request.user) else qs
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def add_view(self, request, form_url="", extra_context=None):
+        return redirect(documents.new_document_url())
+
+    def get_urls(self):
+        prefix = f"{self.model._meta.app_label}_{self.model._meta.model_name}"
+        wrap = self.admin_site.admin_view
+        return [
+            path("gerar/", wrap(self.new_view), name=f"{prefix}_new"),
+            path("<int:pk>/imprimir/", wrap(self.print_view), name=f"{prefix}_print"),
+            *super().get_urls(),
+        ]
+
+    def new_view(self, request):
+        if not self.has_add_permission(request):
+            raise PermissionDenied
+        initial = {k: request.GET.get(k) for k in ("client", "property") if request.GET.get(k)}
+        form = DocumentForm(request.POST or None, initial=initial, user=request.user)
+        if request.method == "POST" and form.is_valid():
+            data = form.cleaned_data
+            try:
+                doc = documents.generate(
+                    data["template"],
+                    client=data["client"],
+                    property=data["property"],
+                    user=request.user,
+                )
+            except documents.DocumentError as exc:
+                form.add_error("template", str(exc))
+            else:
+                return redirect(reverse("admin:crm_generateddocument_print", args=[doc.pk]))
+        context = {
+            **self.admin_site.each_context(request),
+            "title": _("Gerar documento"),
+            "opts": self.model._meta,
+            "form": form,
+        }
+        return TemplateResponse(request, "crm/document_new.html", context)
+
+    def print_view(self, request, pk):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        doc = get_object_or_404(self.get_queryset(request), pk=pk)
+        context = {
+            "doc": doc,
+            "site": SiteSettings.load(),
+            "back": reverse("admin:crm_generateddocument_changelist"),
+        }
+        return TemplateResponse(request, "crm/document_print.html", context)
+
+    @display(description=_("imprimir"))
+    def print_link(self, obj):
+        url = reverse("admin:crm_generateddocument_print", args=[obj.pk])
+        return format_html('<a href="{}" target="_blank" rel="noopener">{}</a>', url, _("Abrir"))
+
+    @display(description=_("conteúdo"))
+    def preview(self, obj):
+        return mark_safe(f'<div class="prose max-w-none">{obj.html}</div>')  # noqa: S308 (gerado e escapado em documents.to_html)

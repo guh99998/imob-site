@@ -9,6 +9,7 @@ Site de imobiliária (venda e aluguel) com painel de gestão. Django 6.1, Python
 - **Mais procurados:** a home mostra as buscas mais feitas nos últimos 30 dias (sem dado pessoal, sem robôs); o painel lista a demanda em "Contatos → Buscas no site".
 - **CRM de clientes:** tudo o que entra pelo site (mensagem de imóvel, contato, anúncio, "Procuro um imóvel") vira um cliente sem duplicar (casa por WhatsApp ou email), com histórico, corretor responsável, etapa do funil, retornos agendados (no dashboard e na sidebar) e anonimização (LGPD). O Corretor vê só os próprios clientes.
 - **API aberta (opcional):** `/api/v1/` com chave (`Authorization: Api-Key …`) criada no painel: enviar contatos (sem duplicar cliente), ler/atualizar clientes e histórico, ler imóveis publicados. Documentação em `/api/docs/`. Desligada por padrão: ligue com `FEATURES=…,api`.
+- **Documentos:** termo de visita, proposta, contratos e recibo gerados a partir de modelos editáveis no painel (com valor por extenso), em página A4 para imprimir ou salvar em PDF, com histórico de quem gerou o quê. Modelos-base de exemplo: `manage.py seed_document_templates`.
 - **Duplicados:** ao salvar um imóvel o painel avisa se ele repete outro (mesmo CEP, número e complemento, ou características parecidas); coluna e filtro na lista, ação "Marcar como não duplicado" e comando `find_duplicates` para varrer o estoque.
 - **Painel (`/admin/`):** imóveis com código automático por categoria, fotos em lote, máscaras, pesquisa avançada, mensagem pronta para o cliente, leads e procuras, corretores/parceiros/proprietários com funções e auditoria.
 - **Módulos opcionais por site:** variável `FEATURES` (`brokers`, `partners`, `owners`, `searches`, `crm`, `api`; a `api` vem desligada).
@@ -31,6 +32,7 @@ Site em http://localhost:8000 e painel em http://localhost:8000/admin/.
 | Testes | `uv run pytest` |
 | Lint e formato | `uv run ruff check . --fix && uv run ruff format .` |
 | Migrations | `uv run python manage.py makemigrations && uv run python manage.py migrate` |
+| Modelos de documentos | `uv run python manage.py seed_document_templates` |
 | Varrer duplicados | `uv run python manage.py find_duplicates` |
 | Tailwind (prod) | `uv run python manage.py tailwind build && uv run python manage.py collectstatic` |
 
@@ -67,4 +69,4 @@ Plano em `plans/plano-016-022-novas-funcoes.md`:
 - [x] 019 — Detecção de imóveis duplicados
 - [x] 020 — CRM de clientes
 - [x] 021 — API aberta do CRM
-- [ ] 022 — Modelos de documentos (visita, contrato, recibo)
+- [x] 022 — Modelos de documentos (visita, contrato, recibo)

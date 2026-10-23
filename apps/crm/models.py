@@ -195,3 +195,94 @@ class FollowUp(models.Model):
     @property
     def is_overdue(self):
         return not self.done and self.due_date < timezone.localdate()
+
+
+class DocumentTemplate(models.Model):
+    """Modelo de documento em texto simples com variáveis (ver `apps/crm/documents.py`)."""
+
+    class Kind(models.TextChoices):
+        VISIT = "VISIT", _("Termo de visita")
+        PROPOSAL = "PROPOSAL", _("Proposta")
+        RENTAL = "RENTAL", _("Contrato de locação")
+        BROKERAGE = "BROKERAGE", _("Contrato de intermediação")
+        RECEIPT = "RECEIPT", _("Recibo")
+
+    name = models.CharField(_("nome"), max_length=120)
+    kind = models.CharField(_("tipo"), max_length=10, choices=Kind)
+    description = models.CharField(_("observação interna"), max_length=200, blank=True)
+    body = models.TextField(
+        _("texto do modelo"),
+        help_text=_(
+            "Texto simples. Variáveis: {{ cliente.nome }}, {{ cliente.whatsapp }}, "
+            "{{ imovel.codigo }}, {{ imovel.titulo }}, {{ imovel.endereco }}, {{ imovel.valor }}, "
+            "{{ imovel.valor_extenso }}, {{ imobiliaria.nome }}, {{ imobiliaria.creci }}, "
+            "{{ corretor.nome }}, {{ data }}, {{ data_extenso }}. "
+            "Linha começando com # vira título."
+        ),
+    )
+    is_active = models.BooleanField(_("ativo"), default=True)
+    updated_at = models.DateTimeField(_("alterado em"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("modelo de documento")
+        verbose_name_plural = _("modelos de documento")
+        ordering = ["kind", "name"]
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        from .documents import DocumentError, validate_body
+
+        try:
+            validate_body(self.body)
+        except DocumentError as exc:
+            raise ValidationError({"body": str(exc)}) from exc
+
+
+class GeneratedDocument(models.Model):
+    """Histórico: o texto final no momento em que foi gerado (não muda se o modelo mudar)."""
+
+    template = models.ForeignKey(
+        DocumentTemplate,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="documents",
+        verbose_name=_("modelo"),
+    )
+    title = models.CharField(_("documento"), max_length=120)
+    client = models.ForeignKey(
+        Client,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="documents",
+        verbose_name=_("cliente"),
+    )
+    property = models.ForeignKey(
+        "properties.Property",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="documents",
+        verbose_name=_("imóvel"),
+    )
+    html = models.TextField(_("conteúdo"))
+    generated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=_("gerado por"),
+    )
+    created_at = models.DateTimeField(_("gerado em"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("documento gerado")
+        verbose_name_plural = _("documentos gerados")
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.title} – {self.created_at:%d/%m/%Y}"

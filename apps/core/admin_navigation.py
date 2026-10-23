@@ -37,6 +37,8 @@ can_view_search = _feature_perm("searches", "leads.view_propertysearch")
 can_view_apikey = _feature_perm("api", "api.view_apikey")
 can_view_client = _feature_perm("crm", "crm.view_client")
 can_view_followup = _feature_perm("crm", "crm.view_followup")
+can_view_document = _feature_perm("crm", "crm.view_generateddocument")
+can_view_documenttemplate = _feature_perm("crm", "crm.view_documenttemplate")
 
 
 def can_view_user(request):

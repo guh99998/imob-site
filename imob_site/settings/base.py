@@ -249,6 +249,18 @@ UNFOLD = {
                         "badge": "apps.core.admin_navigation.overdue_followups_badge",
                         "permission": "apps.core.admin_navigation.can_view_followup",
                     },
+                    {
+                        "title": _("Documentos gerados"),
+                        "icon": "description",
+                        "link": reverse_lazy("admin:crm_generateddocument_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_document",
+                    },
+                    {
+                        "title": _("Modelos de documento"),
+                        "icon": "edit_document",
+                        "link": reverse_lazy("admin:crm_documenttemplate_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_documenttemplate",
+                    },
                 ],
             },
             {

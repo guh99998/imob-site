@@ -32,6 +32,9 @@ CRM_DAILY = (
     "add_followup",
     "change_followup",
     "delete_followup",
+    "view_documenttemplate",
+    "view_generateddocument",
+    "add_generateddocument",
 )
 
 

@@ -13,6 +13,7 @@ from apps.core.admin_filters import AdvancedSearchMixin, dropdown_filter
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import enabled
 from apps.core.models import SiteSettings
+from apps.crm import documents as crm_documents
 from apps.people.scoping import ScopedByRoleMixin, is_scoped
 
 from . import duplicates
@@ -180,7 +181,8 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     form = PropertyAdminForm
     inlines = [PropertyPhotoInline]
     actions = ["publish", "mark_sold", "mark_rented", "feature", "dismiss_duplicates"]
-    actions_row = ["view_on_site_action"]
+    actions_row = ["view_on_site_action", "generate_document_row"]
+    actions_detail = ["generate_document_detail"]
     warn_unsaved_form = True
     change_form_after_template = "admin/properties/client_message.html"
     fieldsets = (
@@ -405,6 +407,27 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
                 else f"{obj.code} – {obj.title}"
             )
         return super().render_change_form(request, context, add, change, form_url, obj)
+
+    def has_generate_document_permission(self, request, object_id=None):
+        return crm_documents.can_generate(request)
+
+    @action(
+        description=_("Gerar documento"),
+        url_path="gerar-documento",
+        permissions=["generate_document"],
+    )
+    def generate_document_row(self, request, object_id):
+        prop = get_object_or_404(self.get_queryset(request), pk=object_id)
+        return redirect(crm_documents.new_document_url(property=prop))
+
+    @action(
+        description=_("Gerar documento"),
+        url_path="gerar-documento-detalhe",
+        permissions=["generate_document"],
+    )
+    def generate_document_detail(self, request, object_id):
+        prop = get_object_or_404(self.get_queryset(request), pk=object_id)
+        return redirect(crm_documents.new_document_url(property=prop))
 
     @action(description=_("Ver no site"), url_path="ver-no-site")
     def view_on_site_action(self, request, object_id):

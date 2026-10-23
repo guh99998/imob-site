@@ -18,6 +18,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Rodar: `uv run python manage.py tailwind runserver`
 - Migrations: `uv run python manage.py makemigrations && uv run python manage.py migrate`
 - Testes: `uv run pytest`
+- Modelos-base de documentos: `uv run python manage.py seed_document_templates`
 - Duplicados (varredura): `uv run python manage.py find_duplicates`
 - Dados de exemplo: `uv run python manage.py seed_demo` (`--reset` recria; fotos em `demo/photos/`)
 - Lint/format: `uv run ruff check . --fix && uv run ruff format .`
@@ -34,6 +35,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Duplicados: `apps/properties/duplicates.py` (`find_duplicates`, `refresh_hints`, `dismiss`); `Property.duplicate_hint` é só cache para a lista do painel, recalculado ao salvar no admin e por `manage.py find_duplicates`. Vendido/alugado não entram na comparação.
 - CRM (`apps/crm`, feature `crm`): todo contato do site passa por `apps/crm/services.py` (`register_lead`/`register_search` → `get_or_create_client`, casa por `Client.phone_key` e email); telefone sempre normalizado por `normalize_phone`. Dado pessoal novo em Lead/PropertySearch/Client deve entrar em `services.anonymize`.
 - API (`apps/api`, feature `api`, desligada por padrão): chave `Api-Key` guardada só como hash SHA-256 (`ApiKey.create_with_key`), 404 em tudo com o módulo desligado, throttle por chave (`API_THROTTLE_RATE`). Todo endpoint novo usa `permission_classes` de `apps/api/permissions.py` e reaproveita `apps/crm/services.py`; documentação via drf-spectacular.
+- Documentos (`apps/crm/documents.py`): o texto do modelo é editado por funcionários, então roda no engine isolado de `documents.py` com contexto **só de dicionários** (`build_context`, nunca instância de model), sem `include`/`extends`/`debug`, e sai escapado por `to_html`. Variável nova para os modelos = nova chave em `build_context`.
 - Views HTMX: detectar `request.htmx` e retornar partial de `templates/partials/`; a página deve funcionar sem JS.
 - Categorias de imóvel são cadastro editável (`Category`), não TextChoices.
 - CRUD é feito no Django Admin (django-unfold; sidebar em `UNFOLD["SIDEBAR"]`) — evoluir o admin antes de criar telas próprias.

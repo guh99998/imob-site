@@ -10,6 +10,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apps.core.models import SiteSettings
+from apps.crm.base_templates import ensure_base_templates
 from apps.crm.models import Client, FollowUp, Interaction
 from apps.people.models import Broker, Owner, Partner
 from apps.properties.models import (
@@ -245,6 +246,7 @@ class Command(BaseCommand):
                 )
             created += 1
         self.seed_clients(broker)
+        ensure_base_templates()
         for key, label, count in POPULAR_SEARCHES:
             SearchQuery.objects.get_or_create(
                 key=key, defaults={"label": label, "count": count, "results": 3}

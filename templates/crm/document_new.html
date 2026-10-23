@@ -1,0 +1,37 @@
+{% extends 'admin/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+  {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+<style>
+  .doc-new { max-width: 36rem; }
+  .doc-new p.intro { margin: 0 0 1.5rem; opacity: .75; }
+  .doc-new .row { margin-bottom: 1.25rem; }
+  .doc-new label { display: block; font-weight: 600; margin-bottom: .35rem; }
+  .doc-new .err { color: #dc2626; font-size: .875rem; margin-top: .25rem; }
+  .doc-new .notice { margin: 0 0 1.25rem; padding: .6rem .9rem; border: 1px solid #fde68a; border-radius: 4px; background: #fffbeb; color: #78350f; font-size: .9rem; }
+</style>
+<div class="doc-new">
+  <p class="intro">{% trans "Escolha o modelo, o cliente e o imóvel. Na próxima tela você imprime ou salva em PDF." %}</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div class="row">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<p class="err">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    <p class="notice">
+      {% trans "Os modelos-base são exemplos: revise com seu jurídico antes de usar com clientes." %}
+    </p>
+    <button type="submit" class="bg-primary-600 text-white font-semibold rounded px-5 py-2.5">{% trans "Gerar documento" %}</button>
+  </form>
+</div>
+{% endblock %}
