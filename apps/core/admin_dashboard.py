@@ -62,11 +62,16 @@ def crm_context(request):
         ),
         "shortcuts": [
             {
+                "label": _("Funil de clientes"),
+                "icon": "view_kanban",
+                "url": reverse("admin:crm_client_kanban"),
+            },
+            {
                 "label": _("Retornos de hoje"),
                 "icon": "event_upcoming",
                 "url": url,
                 "badge": (due_today + overdue) or None,
-            }
+            },
         ],
     }
 

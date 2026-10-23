@@ -246,6 +246,12 @@ UNFOLD = {
                         "permission": "apps.core.admin_navigation.can_view_client",
                     },
                     {
+                        "title": _("Funil (Kanban)"),
+                        "icon": "view_kanban",
+                        "link": reverse_lazy("admin:crm_client_kanban"),
+                        "permission": "apps.core.admin_navigation.can_view_client",
+                    },
+                    {
                         "title": _("Retornos"),
                         "icon": "event_upcoming",
                         "link": followups_link,

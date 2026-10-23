@@ -1,8 +1,10 @@
+from datetime import timedelta
 from urllib.parse import urlencode
 
 from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -18,6 +20,7 @@ from apps.core.admin_filters import AdvancedSearchMixin
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import FeatureGatedAdminMixin
 from apps.core.models import SiteSettings
+from apps.people.models import Broker
 from apps.people.scoping import ScopedByRoleMixin, is_scoped, own_properties_q
 from apps.properties.models import Property
 
@@ -32,6 +35,13 @@ STAGE_LABELS = {
     Client.Stage.WON: "success",
     Client.Stage.LOST: "danger",
 }
+
+
+KANBAN_CLOSED_DAYS = 30
+
+
+def _due(followup):
+    return followup.due_date
 
 
 KIND_ICONS = {
@@ -88,7 +98,7 @@ class FollowUpInline(TabularInline):
 def _stage_action(stage):
     @admin.action(description=_("Mover para: %s") % Client.Stage(stage).label)
     def move(self, request, queryset):
-        n = queryset.update(stage=stage, updated_at=timezone.now())
+        n = sum(services.move_stage(c, stage, request.user) for c in queryset)
         self.message_user(
             request,
             _("%(n)d cliente(s) movido(s) para “%(stage)s”.")
@@ -190,6 +200,12 @@ class ClientAdmin(
                 self.admin_site.admin_view(self.add_interaction),
                 name="crm_client_add_interaction",
             ),
+            path("kanban/", self.admin_site.admin_view(self.kanban), name="crm_client_kanban"),
+            path(
+                "<int:object_id>/etapa/",
+                self.admin_site.admin_view(self.change_stage),
+                name="crm_client_stage",
+            ),
         ]
         return custom + super().get_urls()
 
@@ -226,6 +242,75 @@ class ClientAdmin(
             "interaction_form": InteractionForm(user=request.user) if can_add else None,
             "interaction_url": reverse("admin:crm_client_add_interaction", args=[client.pk]),
         }
+
+    def kanban(self, request):
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        clients = self.get_queryset(request).filter(anonymized_at__isnull=True)
+        brokers = []
+        broker_id = request.GET.get("broker", "")
+        if not is_scoped(request.user):
+            brokers = Broker.objects.order_by("name")
+            if broker_id.isdigit():
+                clients = clients.filter(broker_id=int(broker_id))
+        else:
+            broker_id = ""
+        since = timezone.now() - timedelta(days=KANBAN_CLOSED_DAYS)
+        clients = clients.select_related("broker").order_by("-updated_at")
+        columns = []
+        can_move = self.has_change_permission(request)
+        for stage in Client.Stage:
+            qs = clients.filter(stage=stage)
+            closed = stage in (Client.Stage.WON, Client.Stage.LOST)
+            if closed:
+                qs = qs.filter(updated_at__gte=since)
+            cards = []
+            for c in qs:
+                pending = sorted((f for f in c.followups.all() if not f.done), key=_due)
+                cards.append({"client": c, "next": pending[0] if pending else None})
+            columns.append(
+                {
+                    "stage": stage,
+                    "cards": cards,
+                    "closed": closed,
+                    "all_url": reverse("admin:crm_client_changelist") + f"?stage__exact={stage}",
+                }
+            )
+        context = {
+            **self.admin_site.each_context(request),
+            "title": _("Funil de clientes"),
+            "opts": self.model._meta,
+            "columns": columns,
+            "stages": Client.Stage.choices,
+            "brokers": brokers,
+            "broker_id": broker_id,
+            "can_move": can_move,
+            "closed_days": KANBAN_CLOSED_DAYS,
+            "today": timezone.localdate(),
+        }
+        return TemplateResponse(request, "admin/crm/kanban.html", context)
+
+    def change_stage(self, request, object_id):
+        if request.method != "POST":
+            return redirect(reverse("admin:crm_client_kanban"))
+        client = get_object_or_404(
+            self.get_queryset(request).filter(anonymized_at__isnull=True), pk=object_id
+        )
+        if not self.has_change_permission(request, client):
+            raise PermissionDenied
+        stage = request.POST.get("stage", "")
+        if stage not in Client.Stage.values:
+            return HttpResponseBadRequest("etapa inválida")
+        moved = services.move_stage(client, stage, request.user)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"ok": True, "moved": moved, "stage": stage})
+        if moved:
+            messages.success(
+                request,
+                _("%(name)s movido para “%(stage)s”.")
+                % {"name": client.name, "stage": Client.Stage(stage).label},
+            )
+        return redirect(reverse("admin:crm_client_kanban"))
 
     def add_interaction(self, request, object_id):
         client = get_object_or_404(self.get_queryset(request), pk=object_id)

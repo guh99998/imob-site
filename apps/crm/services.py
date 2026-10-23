@@ -127,6 +127,24 @@ def register_search(search):
 
 
 @transaction.atomic
+def move_stage(client, stage, user=None):
+    """Muda a etapa do funil e deixa o registro na linha do tempo. Devolve False se não mudou."""
+    stage = Client.Stage(stage)
+    if client.stage == stage:
+        return False
+    old = Client.Stage(client.stage)
+    client.stage = stage
+    client.updated_by = user
+    client.save(update_fields=["stage", "updated_by", "updated_at"])
+    Interaction.objects.create(
+        client=client,
+        kind=Interaction.Kind.NOTE,
+        text=f"Etapa: {old.label} → {stage.label}",
+        author=user,
+    )
+    return True
+
+
 def anonymize(client):
     """LGPD: apaga os dados pessoais do cliente e dos contatos/procuras ligados a ele."""
     client.name = ANON_NAME
