@@ -36,6 +36,7 @@ CI/CD, múltiplos servidores, S3 (já suportado por variáveis, só documentado)
 - [x] CI/CD (GitHub Actions + GHCR); a VPS faz `docker compose pull web`
 
 ## Notas de operação
+- Volume `imob_media` nasce com dono root (o Caddy monta primeiro): rodar uma vez `chown -R app:app /app/media` como root no container `web`, senão upload de foto falha com PermissionError.
 - DNS do domínio na Cloudflare deve ficar "DNS only" (sem proxy) para o Let's Encrypt validar.
 - `ALLOWED_HOSTS` em prod inclui `localhost`/`127.0.0.1` por causa do healthcheck.
 - Recriar o remoto `rclone` exige guardar o `rclone.conf` (senha de criptografia) fora da VPS.
