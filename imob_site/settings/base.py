@@ -28,12 +28,15 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "django_htmx",
     "django_filters",
+    "rest_framework",
+    "drf_spectacular",
     "django_tailwind_cli",
     "apps.core",
     "apps.properties",
     "apps.leads",
     "apps.people",
     "apps.crm",
+    "apps.api",
 ]
 
 MIDDLEWARE = [
@@ -94,6 +97,32 @@ STORAGES = {
 
 # Módulos do painel ligados neste site (env FEATURES="brokers,partners,owners,searches").
 SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches", "crm"])
+
+# API aberta (módulo opcional `api`, desligado por padrão): chaves criadas no painel.
+API_THROTTLE_RATE = env("API_THROTTLE_RATE", default="120/min")
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.api.authentication.ApiKeyAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["apps.api.permissions.ApiEnabled"],
+    "DEFAULT_THROTTLE_CLASSES": ["apps.api.throttles.ApiKeyThrottle"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+        "rest_framework.parsers.FormParser",
+    ],
+    "DEFAULT_PAGINATION_CLASS": "apps.api.pagination.Pagination",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "UNAUTHENTICATED_USER": None,
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "API do site",
+    "DESCRIPTION": (
+        "Envie contatos, consulte e atualize clientes do CRM e leia os imóveis publicados. "
+        "Autentique com o header `Authorization: Api-Key <chave>` (chave criada no painel)."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": r"/api/v1",
+}
 
 # Crédito no rodapé do site (None desliga).
 DEVELOPER_CREDIT = {
@@ -281,6 +310,12 @@ UNFOLD = {
                         "icon": "storefront",
                         "link": site_settings_link,
                         "permission": "apps.core.admin_navigation.can_view_settings",
+                    },
+                    {
+                        "title": _("Chaves de API"),
+                        "icon": "key",
+                        "link": reverse_lazy("admin:api_apikey_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_apikey",
                     },
                     {
                         "title": _("Equipe"),

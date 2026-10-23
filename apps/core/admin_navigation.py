@@ -34,6 +34,7 @@ can_view_broker = _feature_perm("brokers", "people.view_broker")
 can_view_partner = _feature_perm("partners", "people.view_partner")
 can_view_owner = _feature_perm("owners", "people.view_owner")
 can_view_search = _feature_perm("searches", "leads.view_propertysearch")
+can_view_apikey = _feature_perm("api", "api.view_apikey")
 can_view_client = _feature_perm("crm", "crm.view_client")
 can_view_followup = _feature_perm("crm", "crm.view_followup")
 

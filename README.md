@@ -8,9 +8,10 @@ Site de imobiliária (venda e aluguel) com painel de gestão. Django 6.1, Python
 - **Favoritos:** coração nos cards e no detalhe, página `/favoritos/` e contador no header, sem login (cookie `favs`, funciona sem JS). O painel mostra quantas vezes cada imóvel foi favoritado.
 - **Mais procurados:** a home mostra as buscas mais feitas nos últimos 30 dias (sem dado pessoal, sem robôs); o painel lista a demanda em "Contatos → Buscas no site".
 - **CRM de clientes:** tudo o que entra pelo site (mensagem de imóvel, contato, anúncio, "Procuro um imóvel") vira um cliente sem duplicar (casa por WhatsApp ou email), com histórico, corretor responsável, etapa do funil, retornos agendados (no dashboard e na sidebar) e anonimização (LGPD). O Corretor vê só os próprios clientes.
+- **API aberta (opcional):** `/api/v1/` com chave (`Authorization: Api-Key …`) criada no painel: enviar contatos (sem duplicar cliente), ler/atualizar clientes e histórico, ler imóveis publicados. Documentação em `/api/docs/`. Desligada por padrão: ligue com `FEATURES=…,api`.
 - **Duplicados:** ao salvar um imóvel o painel avisa se ele repete outro (mesmo CEP, número e complemento, ou características parecidas); coluna e filtro na lista, ação "Marcar como não duplicado" e comando `find_duplicates` para varrer o estoque.
 - **Painel (`/admin/`):** imóveis com código automático por categoria, fotos em lote, máscaras, pesquisa avançada, mensagem pronta para o cliente, leads e procuras, corretores/parceiros/proprietários com funções e auditoria.
-- **Módulos opcionais por site:** variável `FEATURES` (`brokers`, `partners`, `owners`, `searches`, `crm`).
+- **Módulos opcionais por site:** variável `FEATURES` (`brokers`, `partners`, `owners`, `searches`, `crm`, `api`; a `api` vem desligada).
 
 ## Como rodar (desenvolvimento)
 ```bash
@@ -39,6 +40,7 @@ apps/core         configurações do site, home, painel (dashboard, máscaras, f
 apps/properties   imóveis, categorias, cidades/bairros, busca e filtros
 apps/leads        contatos, anúncios e procuras de clientes
 apps/crm          clientes, histórico, retornos e captação automática
+apps/api          chaves de API e endpoints /api/v1/
 apps/people       corretores, parceiros, proprietários, funções e auditoria
 imob_site/settings  base, dev e prod
 templates/  frontend/  static/
@@ -64,5 +66,5 @@ Plano em `plans/plano-016-022-novas-funcoes.md`:
 - [x] 018 — Buscas populares na home
 - [x] 019 — Detecção de imóveis duplicados
 - [x] 020 — CRM de clientes
-- [ ] 021 — API aberta do CRM
+- [x] 021 — API aberta do CRM
 - [ ] 022 — Modelos de documentos (visita, contrato, recibo)

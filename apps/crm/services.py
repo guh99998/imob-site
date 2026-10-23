@@ -68,15 +68,15 @@ def _fill_missing(client, phone, email, extra):
         client.save(update_fields=[*changed, "phone_key", "updated_at"])
 
 
-def register_lead(lead):
-    """Liga uma mensagem do site (imóvel, contato, anúncio) a um cliente."""
+def register_lead(lead, source=None):
+    """Liga uma mensagem (site ou API) a um cliente. `source` troca a origem padrão."""
     try:
         listing = lead.kind == lead.Kind.LISTING
         client, _created = get_or_create_client(
             name=lead.name,
             phone=lead.phone,
             email=lead.email,
-            source=Client.Source.LISTING if listing else Client.Source.SITE,
+            source=source or (Client.Source.LISTING if listing else Client.Source.SITE),
             broker=lead.property.broker if lead.property_id else None,
         )
         if client is None:

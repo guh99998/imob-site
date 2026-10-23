@@ -13,7 +13,7 @@ ROLE_CHOICES = [
 ]
 ROLE_NAMES = [name for name, _label in ROLE_CHOICES]
 
-APP_LABELS = ("core", "properties", "leads", "people", "crm", "auth")
+APP_LABELS = ("core", "properties", "leads", "people", "crm", "api", "auth")
 
 
 def _perms(*codenames):
@@ -40,7 +40,7 @@ def _permissions_for(role):
     if role == ADMIN:
         return everything
     if role == MANAGER:
-        return everything.exclude(content_type__app_label__in=("core", "auth"))
+        return everything.exclude(content_type__app_label__in=("core", "auth", "api"))
     lookups = _perms(
         "view_category", "view_city", "view_neighborhood", "view_feature", "view_property"
     )

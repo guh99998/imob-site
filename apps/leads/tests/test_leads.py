@@ -37,7 +37,7 @@ def test_invalid_lead_shows_errors(client):
     prop = PropertyFactory()
     r = client.post(url(prop), {**DATA, "email": "invalido"})
     assert not Lead.objects.exists()
-    assert "Informe um endereço de email válido" in r.content.decode()
+    assert "Insira um endereço de email válido" in r.content.decode()
 
 
 def test_honeypot_blocks_bots(client):

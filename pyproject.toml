@@ -15,6 +15,8 @@ dependencies = [
     "gunicorn",
     "django-storages[s3]",
     "django-unfold>=0.110.0",
+    "djangorestframework>=3.18.3",
+    "drf-spectacular>=0.30.0",
 ]
 
 [dependency-groups]
