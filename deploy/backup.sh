@@ -1,7 +1,7 @@
 #!/bin/sh
 # Backup do imob-site: dump do Postgres + fotos (volume imob_media).
 # Uso: deploy/backup.sh [pasta-destino]   (padrão: /opt/backups)
-# Mantém os últimos 14 dias. Cópia FORA da VPS é por sua conta (rclone/scp).
+# Mantém os últimos 14 dias na VPS. Com BACKUP_REMOTE definido, também envia via rclone.
 set -eu
 
 DEST="${1:-/opt/backups}"
@@ -21,3 +21,11 @@ docker run --rm -v imob_media:/media:ro -v "$DEST":/backup alpine \
 find "$DEST" -name 'db-*.sql.gz' -mtime +14 -delete
 find "$DEST" -name 'media-*.tar.gz' -mtime +14 -delete
 echo "backup ok: $DEST/db-$STAMP.sql.gz e media-$STAMP.tar.gz"
+
+# Cópia fora da VPS (opcional): BACKUP_REMOTE=r2crypt: (remoto rclone criptografado).
+# Envia só os arquivos desta rodada e mantém 30 dias no destino.
+if [ -n "${BACKUP_REMOTE:-}" ]; then
+    rclone copy "$DEST" "$BACKUP_REMOTE" --include "*-$STAMP.*"
+    rclone delete "$BACKUP_REMOTE" --min-age 30d
+    echo "enviado para $BACKUP_REMOTE"
+fi
