@@ -1,0 +1,46 @@
+{% if timeline_client %}
+<section class="mt-8" aria-labelledby="timeline-title">
+  <h2 id="timeline-title" class="text-lg font-semibold mb-4">Interações</h2>
+
+  {% if interaction_form %}
+  <form method="post" action="{{ interaction_url }}" class="mb-6 p-4 border border-base-200 rounded-default bg-white">
+    {% csrf_token %}
+    <h3 class="font-semibold mb-3">Registrar interação</h3>
+    <div class="grid gap-3 md:grid-cols-3">
+      <label class="text-sm">Tipo{{ interaction_form.kind }}</label>
+      <label class="text-sm">Quando{{ interaction_form.happened_at }}</label>
+      <label class="text-sm">Imóvel (opcional){{ interaction_form.property }}</label>
+    </div>
+    <label class="text-sm block mt-3">O que aconteceu{{ interaction_form.text }}</label>
+    <button type="submit" class="mt-3 px-3 py-1.5 rounded-default bg-primary-600 text-white text-sm">Registrar</button>
+  </form>
+  {% endif %}
+
+  {% if timeline %}
+  <ol class="space-y-3">
+    {% for e in timeline %}
+    <li class="flex gap-3 p-4 border border-base-200 rounded-default bg-white">
+      <span class="material-symbols-outlined text-primary-600" aria-hidden="true">{{ e.icon }}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm">
+          <strong>{{ e.obj.get_kind_display }}</strong>
+          · {{ e.obj.happened_at|date:"d/m/Y H:i" }}
+          {% if e.obj.author %}· {{ e.obj.author.get_full_name|default:e.obj.author.get_username }}{% endif %}
+          {% if e.obj.property %}· <a class="underline" href="{% url 'admin:properties_property_change' e.obj.property_id %}">{{ e.obj.property.code }}</a>{% endif %}
+        </p>
+        {% if e.obj.text %}<p class="mt-1 text-sm whitespace-pre-line">{{ e.obj.text }}</p>{% endif %}
+        {% if e.edit_url or e.delete_url %}
+        <p class="mt-2 text-xs">
+          {% if e.edit_url %}<a class="underline" href="{{ e.edit_url }}">Editar</a>{% endif %}
+          {% if e.delete_url %}{% if e.edit_url %} · {% endif %}<a class="underline text-red-600" href="{{ e.delete_url }}">Excluir</a>{% endif %}
+        </p>
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="text-sm text-base-500">Nenhuma interação registrada ainda.</p>
+  {% endif %}
+</section>
+{% endif %}

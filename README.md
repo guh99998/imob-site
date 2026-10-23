@@ -71,5 +71,6 @@ Plano em `plans/plano-016-022-novas-funcoes.md`:
 - [x] 021 — API aberta do CRM
 - [x] 022 — Modelos de documentos (visita, contrato, recibo)
 - [x] 023 — Ajustes do site/painel (link Retornos, `MAX_FEATURED` no .env, código no card, preço por seção)
+- [x] 024 — Histórico do cliente em linha do tempo com "Registrar interação"
 
 Plano em `plans/plano-023-027-ajustes-kanban-contratos.md` (024 histórico, 025 Kanban, 026 partes do contrato).

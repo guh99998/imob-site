@@ -259,7 +259,7 @@ def test_admin_followup_mark_done(admin_client):
     assert f.done and f.done_at
 
 
-def test_inline_sets_author_and_broker(admin_client, admin_user):
+def test_inline_sets_broker(admin_client, admin_user):
     broker = Broker.objects.create(name="Marina")
     crm = Client.objects.create(name="Ana", broker=broker)
     data = {
@@ -271,14 +271,6 @@ def test_inline_sets_author_and_broker(admin_client, admin_user):
         "stage": "NEW",
         "tags": "",
         "notes": "",
-        "interactions-TOTAL_FORMS": "1",
-        "interactions-INITIAL_FORMS": "0",
-        "interactions-MIN_NUM_FORMS": "0",
-        "interactions-MAX_NUM_FORMS": "1000",
-        "interactions-0-kind": "CALL",
-        "interactions-0-happened_at_0": "2026-10-20",
-        "interactions-0-happened_at_1": "10:00:00",
-        "interactions-0-text": "Liguei",
         "followups-TOTAL_FORMS": "1",
         "followups-INITIAL_FORMS": "0",
         "followups-MIN_NUM_FORMS": "0",
@@ -288,7 +280,6 @@ def test_inline_sets_author_and_broker(admin_client, admin_user):
     }
     r = admin_client.post(reverse("admin:crm_client_change", args=[crm.pk]), data)
     assert r.status_code == 302, r.content.decode()[:500]
-    assert Interaction.objects.get().author == admin_user
     assert FollowUp.objects.get().broker == broker
     crm.refresh_from_db()
     assert crm.updated_by == admin_user

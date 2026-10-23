@@ -34,15 +34,46 @@ STAGE_LABELS = {
 }
 
 
-class InteractionInline(TabularInline):
-    model = Interaction
-    extra = 1
-    tab = True
-    fields = ("kind", "happened_at", "property", "text", "author")
-    readonly_fields = ("author",)
-    autocomplete_fields = ("property",)
-    verbose_name = _("interação")
-    verbose_name_plural = _("Histórico")
+KIND_ICONS = {
+    Interaction.Kind.CALL: "call",
+    Interaction.Kind.WHATSAPP: "chat",
+    Interaction.Kind.EMAIL: "mail",
+    Interaction.Kind.VISIT: "home",
+    Interaction.Kind.NOTE: "edit_note",
+}
+
+_FIELD = "border border-base-200 rounded-default px-3 py-2 text-sm w-full bg-white"
+
+
+class InteractionForm(forms.ModelForm):
+    """Formulário "Registrar interação" da ficha do cliente."""
+
+    happened_at = forms.DateTimeField(
+        label=_("Quando"),
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local", "class": _FIELD}, format="%Y-%m-%dT%H:%M"
+        ),
+    )
+
+    class Meta:
+        model = Interaction
+        fields = ("kind", "happened_at", "property", "text")
+        widgets = {
+            "kind": forms.Select(attrs={"class": _FIELD}),
+            "property": forms.Select(attrs={"class": _FIELD}),
+            "text": forms.Textarea(attrs={"class": _FIELD, "rows": 3}),
+        }
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        properties = Property.objects.order_by("code")
+        if is_scoped(user):
+            properties = properties.filter(own_properties_q(user)).distinct()
+        self.fields["property"].queryset = properties
+        self.fields["property"].empty_label = _("(nenhum)")
+        self.fields["text"].required = True
+        if not self.is_bound:
+            self.initial["happened_at"] = timezone.localtime().replace(second=0, microsecond=0)
 
 
 class FollowUpInline(TabularInline):
@@ -89,7 +120,8 @@ class ClientAdmin(
     search_fields = ("name", "whatsapp", "email", "tags", "notes")
     search_help_text = _("Buscar por nome, WhatsApp, email ou etiqueta")
     readonly_fields = ("lgpd_consent_at", "anonymized_at", "audit_created", "audit_updated")
-    inlines = [InteractionInline, FollowUpInline]
+    inlines = [FollowUpInline]
+    change_form_after_template = "admin/crm/client_timeline.html"
     actions_row = ["matching_row", "generate_document_row"]
     actions_detail = ["matching_detail", "generate_document_detail"]
     warn_unsaved_form = True
@@ -151,13 +183,77 @@ class ClientAdmin(
             obj.broker = getattr(request.user, "broker", None)
         super().save_model(request, obj, form, change)
 
+    def get_urls(self):
+        custom = [
+            path(
+                "<path:object_id>/interacao/",
+                self.admin_site.admin_view(self.add_interaction),
+                name="crm_client_add_interaction",
+            ),
+        ]
+        return custom + super().get_urls()
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        client = self.get_queryset(request).filter(pk=object_id).first()
+        if client is not None:
+            extra_context.update(self._timeline_context(request, client))
+        return super().change_view(request, object_id, form_url, extra_context)
+
+    def _timeline_context(self, request, client):
+        perms = request.user.has_perm
+        entries = [
+            {
+                "obj": i,
+                "icon": KIND_ICONS.get(i.kind, "edit_note"),
+                "edit_url": reverse("admin:crm_interaction_change", args=[i.pk])
+                if perms("crm.change_interaction")
+                else None,
+                "delete_url": reverse("admin:crm_interaction_delete", args=[i.pk])
+                if perms("crm.delete_interaction")
+                else None,
+            }
+            for i in client.interactions.select_related("author", "property").order_by(
+                "-happened_at", "-pk"
+            )
+        ]
+        can_add = (
+            perms("crm.add_interaction") and perms("crm.change_client") and not client.anonymized_at
+        )
+        return {
+            "timeline": entries,
+            "timeline_client": client,
+            "interaction_form": InteractionForm(user=request.user) if can_add else None,
+            "interaction_url": reverse("admin:crm_client_add_interaction", args=[client.pk]),
+        }
+
+    def add_interaction(self, request, object_id):
+        client = get_object_or_404(self.get_queryset(request), pk=object_id)
+        change_url = reverse("admin:crm_client_change", args=[client.pk])
+        if request.method != "POST":
+            return redirect(change_url)
+        if (
+            client.anonymized_at
+            or not request.user.has_perm("crm.add_interaction")
+            or not self.has_change_permission(request, client)
+        ):
+            raise PermissionDenied
+        form = InteractionForm(request.POST, user=request.user)
+        if not form.is_valid():
+            messages.error(request, _("Não foi possível registrar: confira os campos."))
+            return redirect(change_url)
+        interaction = form.save(commit=False)
+        interaction.client = client
+        interaction.author = request.user
+        interaction.save()
+        messages.success(request, _("Interação registrada."))
+        return redirect(change_url)
+
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
         for obj in formset.deleted_objects:
             obj.delete()
         for obj in instances:
-            if isinstance(obj, Interaction) and not obj.author_id:
-                obj.author = request.user
             if isinstance(obj, FollowUp) and not obj.broker_id:
                 obj.broker = form.instance.broker
             obj.save()
@@ -247,6 +343,36 @@ class ClientAdmin(
             services.anonymize(client)
             n += 1
         self.message_user(request, _("%d cliente(s) anonimizado(s).") % n, messages.SUCCESS)
+
+
+@admin.register(Interaction)
+class InteractionAdmin(FeatureGatedAdminMixin, ScopedByRoleMixin, ModelAdmin):
+    """Só para editar/excluir uma interação pela linha do tempo; fica fora do menu."""
+
+    feature = "crm"
+    scope_prefix = "client__"
+    fields = ("kind", "happened_at", "property", "text")
+    autocomplete_fields = ("property",)
+
+    def get_model_perms(self, request):
+        return {}
+
+    def has_add_permission(self, request):
+        return False
+
+    def response_change(self, request, obj):
+        return redirect(reverse("admin:crm_client_change", args=[obj.client_id]))
+
+    def delete_model(self, request, obj):
+        request._client_id = obj.client_id
+        super().delete_model(request, obj)
+
+    def response_delete(self, request, obj_display, obj_id):
+        client_id = getattr(request, "_client_id", None)
+        if client_id:
+            self.message_user(request, _("Interação excluída."))
+            return redirect(reverse("admin:crm_client_change", args=[client_id]))
+        return super().response_delete(request, obj_display, obj_id)
 
 
 @admin.register(FollowUp)
