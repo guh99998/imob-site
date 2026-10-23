@@ -27,14 +27,30 @@ STATUS_LABELS = {
 class LeadAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
     scope_prefix = "property__"
     masks = {"phone": "phone"}
-    list_display = ("name", "email", "phone", "kind", "property_link", "status_badge", "created_at")
+    list_display = (
+        "name",
+        "email",
+        "phone",
+        "kind",
+        "property_link",
+        "client_link",
+        "status_badge",
+        "created_at",
+    )
     list_filter = ("status", "kind", "created_at")
     search_fields = ("name", "email", "phone", "message")
     search_help_text = _("Buscar por nome, e-mail, telefone ou mensagem")
     readonly_fields = ("created_at",)
-    list_select_related = ("property",)
+    list_select_related = ("property", "client")
     actions = ["mark_contacted"]
     actions_row = ["mark_contacted_row"]
+
+    @display(description=_("cliente"))
+    def client_link(self, obj):
+        if not obj.client_id:
+            return "-"
+        url = reverse("admin:crm_client_change", args=[obj.client_id])
+        return format_html('<a href="{}">{}</a>', url, obj.client)
 
     @display(description=_("imóvel"))
     def property_link(self, obj):
@@ -81,6 +97,7 @@ class PropertySearchAdmin(
         "wanted",
         "city",
         "price_range",
+        "client_link",
         "status_badge",
         "created_at",
     )
@@ -91,6 +108,13 @@ class PropertySearchAdmin(
     filter_horizontal = ("categories",)
     actions = ["mark_contacted"]
     actions_row = ["matching_row", "mark_contacted_row"]
+
+    @display(description=_("cliente"))
+    def client_link(self, obj):
+        if not obj.client_id:
+            return "-"
+        url = reverse("admin:crm_client_change", args=[obj.client_id])
+        return format_html('<a href="{}">{}</a>', url, obj.client)
 
     @display(description=_("procura"))
     def wanted(self, obj):
@@ -109,7 +133,12 @@ class PropertySearchAdmin(
         return obj.status, obj.get_status_display()
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related("city").prefetch_related("categories")
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("city", "client")
+            .prefetch_related("categories")
+        )
 
     @action(description=_("Ver imóveis compatíveis"), url_path="compativeis")
     def matching_row(self, request, object_id):

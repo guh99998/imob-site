@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
 from apps.core.features import enabled
+from apps.crm.services import register_lead, register_search
 from apps.properties.models import Property
 
 from .forms import LeadForm, PropertySearchForm
@@ -22,6 +23,7 @@ def create_lead(request, slug):
         lead = form.save(commit=False)
         lead.property = prop
         lead.save()
+        register_lead(lead)
         notify_lead(lead)
         return render(request, "leads/partials/success.html", {"property": prop})
     else:
@@ -43,6 +45,7 @@ def lead_page(request, kind, template, action):
             lead = form.save(commit=False)
             lead.kind = kind
             lead.save()
+            register_lead(lead)
             notify_lead(lead)
             sent = True
             form = LeadForm()
@@ -63,6 +66,7 @@ def property_search(request):
             status = 429
         elif form.is_valid():
             search = form.save()
+            register_search(search)
             notify_search(search)
             sent = True
             form = PropertySearchForm()

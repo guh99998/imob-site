@@ -13,11 +13,26 @@ ROLE_CHOICES = [
 ]
 ROLE_NAMES = [name for name, _label in ROLE_CHOICES]
 
-APP_LABELS = ("core", "properties", "leads", "people", "auth")
+APP_LABELS = ("core", "properties", "leads", "people", "crm", "auth")
 
 
 def _perms(*codenames):
     return Permission.objects.filter(codename__in=codenames)
+
+
+CRM_DAILY = (
+    "view_client",
+    "add_client",
+    "change_client",
+    "view_interaction",
+    "add_interaction",
+    "change_interaction",
+    "delete_interaction",
+    "view_followup",
+    "add_followup",
+    "change_followup",
+    "delete_followup",
+)
 
 
 def _permissions_for(role):
@@ -49,6 +64,7 @@ def _permissions_for(role):
                 "view_broker",
                 "view_propertysearch",
                 "change_propertysearch",
+                *CRM_DAILY,
             )
         ).distinct()
     return (
@@ -59,6 +75,7 @@ def _permissions_for(role):
             "view_broker",
             "view_propertysearch",
             "change_propertysearch",
+            *CRM_DAILY,
         )
     ).distinct()
 

@@ -24,7 +24,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 
 ## Convenções
 - Código (models, campos, variáveis) em inglês; textos de UI, `verbose_name`, mensagens em pt-BR com `gettext_lazy`.
-- Apps em `apps/` (core, properties, leads). Settings em `imob_site/settings/{base,dev,prod}.py`, segredos via `.env`.
+- Apps em `apps/` (core, properties, leads, people, crm). Settings em `imob_site/settings/{base,dev,prod}.py`, segredos via `.env`.
 - Choices com `models.TextChoices`. Preços em `DecimalField(max_digits=12, decimal_places=2)`.
 - Público só vê imóveis `Property.objects.published()` (publicado + reservado; vendido/alugado só no painel).
 - Código do imóvel é automático por categoria (`Category.code_prefix` + `CodeSequence`: CA001); nunca editar à mão.
@@ -32,6 +32,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Favoritos do visitante: cookie `favs`, lido/gravado só por `apps/properties/favorites.py`; `favorite_codes`/`favorites_total` vêm do context processor (a view sobrescreve no contexto quando muda o cookie).
 - Buscas do site: `apps/properties/searches.py` grava `SearchQuery` (chave normalizada, sem dado pessoal, ignora robôs) a partir de `property_list`; a home lê `popular()`.
 - Duplicados: `apps/properties/duplicates.py` (`find_duplicates`, `refresh_hints`, `dismiss`); `Property.duplicate_hint` é só cache para a lista do painel, recalculado ao salvar no admin e por `manage.py find_duplicates`. Vendido/alugado não entram na comparação.
+- CRM (`apps/crm`, feature `crm`): todo contato do site passa por `apps/crm/services.py` (`register_lead`/`register_search` → `get_or_create_client`, casa por `Client.phone_key` e email); telefone sempre normalizado por `normalize_phone`. Dado pessoal novo em Lead/PropertySearch/Client deve entrar em `services.anonymize`.
 - Views HTMX: detectar `request.htmx` e retornar partial de `templates/partials/`; a página deve funcionar sem JS.
 - Categorias de imóvel são cadastro editável (`Category`), não TextChoices.
 - CRUD é feito no Django Admin (django-unfold; sidebar em `UNFOLD["SIDEBAR"]`) — evoluir o admin antes de criar telas próprias.

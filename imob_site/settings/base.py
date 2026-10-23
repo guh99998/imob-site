@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "apps.properties",
     "apps.leads",
     "apps.people",
+    "apps.crm",
 ]
 
 MIDDLEWARE = [
@@ -92,7 +93,7 @@ STORAGES = {
 }
 
 # Módulos do painel ligados neste site (env FEATURES="brokers,partners,owners,searches").
-SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches"])
+SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches", "crm"])
 
 # Crédito no rodapé do site (None desliga).
 DEVELOPER_CREDIT = {
@@ -199,6 +200,25 @@ UNFOLD = {
                         "icon": "map",
                         "link": reverse_lazy("admin:properties_neighborhood_changelist"),
                         "permission": "apps.core.admin_navigation.can_view_neighborhood",
+                    },
+                ],
+            },
+            {
+                "title": _("Clientes"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Clientes"),
+                        "icon": "contacts",
+                        "link": reverse_lazy("admin:crm_client_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_client",
+                    },
+                    {
+                        "title": _("Retornos"),
+                        "icon": "event_upcoming",
+                        "link": "apps.core.admin_navigation.followups_link",
+                        "badge": "apps.core.admin_navigation.overdue_followups_badge",
+                        "permission": "apps.core.admin_navigation.can_view_followup",
                     },
                 ],
             },

@@ -34,6 +34,8 @@ can_view_broker = _feature_perm("brokers", "people.view_broker")
 can_view_partner = _feature_perm("partners", "people.view_partner")
 can_view_owner = _feature_perm("owners", "people.view_owner")
 can_view_search = _feature_perm("searches", "leads.view_propertysearch")
+can_view_client = _feature_perm("crm", "crm.view_client")
+can_view_followup = _feature_perm("crm", "crm.view_followup")
 
 
 def can_view_user(request):
@@ -80,3 +82,21 @@ def new_searches_badge(request):
 
     count = PropertySearch.objects.filter(status=PropertySearch.Status.NEW).count()
     return count or None
+
+
+def overdue_followups_badge(request):
+    from .admin_dashboard import crm_followups
+
+    if not can_view_followup(request):
+        return None
+    return crm_followups(request).filter(due_date__lte=_today()).count() or None
+
+
+def _today():
+    from django.utils import timezone
+
+    return timezone.localdate()
+
+
+def followups_link(request):
+    return reverse("admin:crm_followup_changelist") + "?done__exact=0"

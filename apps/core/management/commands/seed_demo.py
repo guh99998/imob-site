@@ -1,13 +1,16 @@
 """Popula o site com conteúdo de exemplo (fotos do Pexels em demo/photos). Idempotente."""
 
+from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 
 from apps.core.models import SiteSettings
+from apps.crm.models import Client, FollowUp, Interaction
 from apps.people.models import Broker, Owner, Partner
 from apps.properties.models import (
     Category,
@@ -241,8 +244,60 @@ class Command(BaseCommand):
                     caption=title if order == 0 else "",
                 )
             created += 1
+        self.seed_clients(broker)
         for key, label, count in POPULAR_SEARCHES:
             SearchQuery.objects.get_or_create(
                 key=key, defaults={"label": label, "count": count, "results": 3}
             )
         self.stdout.write(self.style.SUCCESS(f"Pronto: {created} imóvel(is) criado(s)."))
+
+    def seed_clients(self, broker):
+        """Três clientes de exemplo com histórico e retornos (hoje, atrasado e futuro)."""
+        today = timezone.localdate()
+        rows = [
+            (
+                "Paula Mendes",
+                "(11) 98888-0001",
+                "paula@example.com",
+                Client.Stage.IN_PROGRESS,
+                0,
+                "Ligar para combinar a visita ao apartamento.",
+            ),
+            (
+                "Rafael Costa",
+                "(11) 98888-0002",
+                "rafael@example.com",
+                Client.Stage.VISIT,
+                -2,
+                "Confirmar a visita de sábado.",
+            ),
+            (
+                "Juliana Prado",
+                "(11) 98888-0003",
+                "",
+                Client.Stage.NEW,
+                5,
+                "Enviar opções de casas até R$ 600 mil.",
+            ),
+        ]
+        for name, phone, email, stage, delta, todo in rows:
+            client, created = Client.objects.get_or_create(
+                name=name,
+                defaults={
+                    "whatsapp": phone,
+                    "email": email,
+                    "stage": stage,
+                    "broker": broker,
+                    "source": Client.Source.SITE,
+                    "lgpd_consent": True,
+                },
+            )
+            if created:
+                Interaction.objects.create(
+                    client=client,
+                    kind=Interaction.Kind.WHATSAPP,
+                    text="Primeiro contato pelo site.",
+                )
+                FollowUp.objects.create(
+                    client=client, broker=broker, due_date=today + timedelta(days=delta), note=todo
+                )
