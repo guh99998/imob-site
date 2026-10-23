@@ -4,7 +4,7 @@ from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
@@ -15,6 +15,7 @@ from apps.core.features import enabled
 from apps.core.models import SiteSettings
 from apps.people.scoping import ScopedByRoleMixin, is_scoped
 
+from . import duplicates
 from .models import (
     PUBLIC_STATUSES,
     Category,
@@ -164,11 +165,12 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         "category",
         "price",
         "status_badge",
+        "duplicate_badge",
         "favorites_count",
         "is_featured",
     )
     list_display_links = ("code", "title")
-    list_filter = ("status", "purpose", "category", "neighborhood__city")
+    list_filter = ("status", "purpose", "category", "neighborhood__city", "duplicate_hint")
     list_editable = ("is_featured",)
     list_select_related = ("category", "neighborhood__city")
     search_fields = ("code", "title", "street", "neighborhood__name")
@@ -177,7 +179,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     filter_horizontal = ("features",)
     form = PropertyAdminForm
     inlines = [PropertyPhotoInline]
-    actions = ["publish", "mark_sold", "mark_rented", "feature"]
+    actions = ["publish", "mark_sold", "mark_rented", "feature", "dismiss_duplicates"]
     actions_row = ["view_on_site_action"]
     warn_unsaved_form = True
     change_form_after_template = "admin/properties/client_message.html"
@@ -284,6 +286,37 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         if is_scoped(request.user) and not obj.broker_id:
             obj.broker = getattr(request.user, "broker", None)
         super().save_model(request, obj, form, change)
+        self.warn_duplicates(request, obj)
+
+    def warn_duplicates(self, request, obj):
+        """Aviso (não bloqueia): pode ser outra unidade do mesmo prédio."""
+        matches = duplicates.refresh_hints(obj)
+        if not matches:
+            return
+        if is_scoped(request.user):  # o Corretor não vê imóveis dos outros
+            self.message_user(
+                request,
+                _("Já existe no sistema um imóvel parecido com este. Fale com o gerente."),
+                messages.WARNING,
+            )
+            return
+        links = format_html_join(
+            ", ",
+            '<a href="{}" class="underline">{}</a> ({})',
+            (
+                (
+                    reverse("admin:properties_property_change", args=[m.pk]),
+                    f"{m.code} – {m.title}",
+                    duplicates.LEVEL_LABELS[level],
+                )
+                for m, level in matches[:5]
+            ),
+        )
+        self.message_user(
+            request,
+            format_html("{} {}", _("Possível duplicado de:"), links),
+            messages.WARNING,
+        )
 
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
@@ -331,6 +364,10 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     @display(description=_("situação"), ordering="status", label=STATUS_LABELS)
     def status_badge(self, obj):
         return obj.status, obj.get_status_display()
+
+    @display(description=_("duplicado?"), ordering="duplicate_hint", label={True: "warning"})
+    def duplicate_badge(self, obj):
+        return (True, _("Possível")) if obj.duplicate_hint else "-"
 
     @display(description=_("capa"))
     def cover_preview(self, obj):
@@ -390,6 +427,13 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     @admin.action(description=_("Marcar como alugado"))
     def mark_rented(self, request, queryset):
         queryset.update(status=Property.Status.RENTED)
+
+    @admin.action(description=_("Marcar como não duplicado"), permissions=["change"])
+    def dismiss_duplicates(self, request, queryset):
+        pairs = duplicates.dismiss(request.user, queryset)
+        self.message_user(
+            request, _("%d par(es) marcado(s) como não duplicado.") % pairs, messages.SUCCESS
+        )
 
     @admin.action(description=_("Destacar selecionados"))
     def feature(self, request, queryset):

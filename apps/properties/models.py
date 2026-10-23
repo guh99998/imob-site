@@ -324,6 +324,12 @@ class Property(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     published_at = models.DateTimeField(_("publicado em"), null=True, blank=True)
+    duplicate_hint = models.BooleanField(
+        _("possível duplicado"),
+        default=False,
+        editable=False,
+        help_text=_("Calculado ao salvar: há outro imóvel parecido no estoque."),
+    )
     favorites_count = models.PositiveIntegerField(
         _("favoritos"),
         default=0,
@@ -532,3 +538,24 @@ class SearchQuery(models.Model):
 
     def __str__(self):
         return self.label
+
+
+class DuplicateDismissal(models.Model):
+    """Par de imóveis que o usuário confirmou que NÃO são duplicados (sempre a.pk < b.pk)."""
+
+    property_a = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="+")
+    property_b = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="+")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("par não duplicado")
+        verbose_name_plural = _("pares não duplicados")
+        constraints = [
+            models.UniqueConstraint(fields=["property_a", "property_b"], name="dismissal_unique")
+        ]
+
+    def __str__(self):
+        return f"{self.property_a_id} x {self.property_b_id}"
