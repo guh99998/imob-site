@@ -3,6 +3,8 @@ from .base import *  # noqa: F403
 DEBUG = False
 SECRET_KEY = env("SECRET_KEY")  # noqa: F405
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")  # noqa: F405
+# healthcheck do contêiner chama localhost; de fora o Caddy só repassa os domínios dele
+ALLOWED_HOSTS += ["localhost", "127.0.0.1"]
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])  # noqa: F405
 
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)  # noqa: F405

@@ -8,7 +8,8 @@ COPY . .
 ENV PATH="/app/.venv/bin:$PATH"
 RUN SECRET_KEY=build ALLOWED_HOSTS=* python manage.py tailwind build && \
     SECRET_KEY=build ALLOWED_HOSTS=* python manage.py collectstatic --noinput
-RUN useradd --system --no-create-home app &&     mkdir -p /app/media && chown app /app/media && chmod +x deploy/entrypoint.sh
+RUN useradd --system --create-home app && \
+    mkdir -p /app/media && chown app /app/media && chmod +x deploy/entrypoint.sh
 USER app
 EXPOSE 8000
 CMD ["deploy/entrypoint.sh"]
