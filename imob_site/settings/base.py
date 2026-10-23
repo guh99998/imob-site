@@ -95,10 +95,10 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
-# Módulos do painel ligados neste site (env FEATURES="brokers,partners,owners,searches").
 # Máximo de imóveis em destaque (a home mostra até 3).
 MAX_FEATURED = env.int("MAX_FEATURED", default=3)
 
+# Módulos do painel ligados neste site (env FEATURES="brokers,partners,owners,searches").
 SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches", "crm"])
 
 # API aberta (módulo opcional `api`, desligado por padrão): chaves criadas no painel.
@@ -293,6 +293,12 @@ UNFOLD = {
                         "icon": "real_estate_agent",
                         "link": reverse_lazy("admin:people_owner_changelist"),
                         "permission": "apps.core.admin_navigation.can_view_owner",
+                    },
+                    {
+                        "title": _("Fiadores"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:people_guarantor_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_guarantor",
                     },
                 ],
             },

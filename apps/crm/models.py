@@ -6,6 +6,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from apps.people.models import QualifiedPerson
+
 
 def normalize_phone(text):
     """Só dígitos, sem o 55 do país. Número que não parece telefone vira "" (não casa)."""
@@ -15,7 +17,7 @@ def normalize_phone(text):
     return digits if len(digits) in (10, 11) else ""
 
 
-class Client(models.Model):
+class Client(QualifiedPerson, models.Model):
     class Source(models.TextChoices):
         SITE = "SITE", _("Site")
         SEARCH = "SEARCH", _("Procuro um imóvel")

@@ -57,7 +57,90 @@ def brl(value):
     return f"R$ {text}"
 
 
-def build_context(*, client=None, property=None, user=None, today=None):
+def _cpf(person):
+    return getattr(person, "cpf", "") or ""
+
+
+def _address(person):
+    street = ", ".join(p for p in (person.street, person.number) if p)
+    if person.complement:
+        street = f"{street} ({person.complement})" if street else person.complement
+    city = "/".join(p for p in (person.city, person.state) if p)
+    parts = [street, person.neighborhood, city]
+    text = " - ".join(p for p in parts if p)
+    return f"{text}, CEP {person.zip_code}" if person.zip_code and text else text
+
+
+def _spouse_dict(person):
+    cpf = person.spouse_cpf
+    nationality = person.spouse_nationality or person.nationality
+    parts = [person.spouse_name, nationality, person.spouse_profession]
+    text = ", ".join(p for p in parts if p)
+    if text and cpf:
+        text += f", CPF {cpf}"
+    return {
+        "nome": person.spouse_name,
+        "cpf": cpf,
+        "nacionalidade": person.spouse_nationality,
+        "profissao": person.spouse_profession,
+        "qualificacao": text if person.spouse_name else "",
+    }
+
+
+def _party(person, *, cpf=None):
+    """Dados de uma parte do contrato (cliente, proprietário ou fiador) como dicionário."""
+    empty = {
+        "nome": "", "cpf": "", "nacionalidade": "", "estado_civil": "", "profissao": "",
+        "endereco": "", "qualificacao": "", "conjuge": _spouse_dict_empty(),
+    }  # fmt: skip
+    if person is None:
+        return empty
+    cpf = cpf if cpf is not None else _cpf(person)
+    marital = person.get_marital_status_display().lower() if person.marital_status else ""
+    address = _address(person)
+    parts = [person.name, person.nationality, marital, person.profession]
+    text = ", ".join(p for p in parts if p)
+    if cpf:
+        text += f", CPF {cpf}"
+    if address:
+        text += f", residente e domiciliado(a) em {address}"
+    spouse = _spouse_dict(person)
+    if spouse["qualificacao"] and person.needs_spouse:
+        text += f", e seu(sua) cônjuge {spouse['qualificacao']}"
+    return {
+        "nome": person.name,
+        "cpf": cpf,
+        "nacionalidade": person.nationality,
+        "estado_civil": marital,
+        "profissao": person.profession,
+        "endereco": address,
+        "qualificacao": text,
+        "conjuge": spouse,
+    }
+
+
+def _spouse_dict_empty():
+    return {"nome": "", "cpf": "", "nacionalidade": "", "profissao": "", "qualificacao": ""}
+
+
+def spouse_warnings(kind, *, property=None, guarantor=None):
+    """Avisos (não bloqueiam): parte casada sem cônjuge cadastrado, conforme o tipo de contrato."""
+    from .models import DocumentTemplate
+
+    warnings = []
+    if kind == DocumentTemplate.Kind.RENTAL and guarantor is not None and guarantor.spouse_missing:
+        warnings.append(
+            "O fiador é casado: para o contrato ser válido é necessário incluir o(a) cônjuge."
+        )
+    owner = property.owner if property is not None else None
+    if kind == DocumentTemplate.Kind.BROKERAGE and owner is not None and owner.spouse_missing:
+        warnings.append(
+            "O proprietário é casado: para o contrato ser válido é necessário incluir o(a) cônjuge."
+        )
+    return warnings
+
+
+def build_context(*, client=None, property=None, guarantor=None, user=None, today=None):
     """Contexto só com dicionários e textos (nada de instâncias de model)."""
     today = today or timezone.localdate()
     site = SiteSettings.load()
@@ -68,7 +151,15 @@ def build_context(*, client=None, property=None, user=None, today=None):
             "nome": client.name if client else "",
             "whatsapp": client.whatsapp if client else "",
             "email": client.email if client else "",
+            **_party(client),
         },
+        "proprietario": _party(
+            property.owner if property else None,
+            cpf=(property.owner.cpf or property.owner.document)
+            if property and property.owner
+            else None,
+        ),
+        "fiador": _party(guarantor),
         "imovel": {
             "codigo": property.code if property else "",
             "titulo": property.title if property else "",
@@ -115,10 +206,13 @@ def render(template, context):
     return to_html(_compile(template.body).render(Context(context, autoescape=False)))
 
 
-def generate(template, *, client=None, property=None, user=None):
+def generate(template, *, client=None, property=None, guarantor=None, user=None):
     from .models import GeneratedDocument
 
-    html = render(template, build_context(client=client, property=property, user=user))
+    html = render(
+        template,
+        build_context(client=client, property=property, guarantor=guarantor, user=user),
+    )
     return GeneratedDocument.objects.create(
         template=template,
         title=template.name,

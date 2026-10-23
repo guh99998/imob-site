@@ -13,6 +13,12 @@ logger = logging.getLogger(__name__)
 
 ANON_NAME = "Cliente anonimizado"
 ANON_EMAIL = "anonimizado@example.invalid"
+# Qualificação (spec 026): dado pessoal do cliente e do cônjuge, apagado na anonimização.
+PERSONAL_QUALIFICATION_FIELDS = (
+    "cpf", "marital_status", "profession", "zip_code", "street", "number", "complement",
+    "neighborhood", "city", "state", "spouse_name", "spouse_cpf", "spouse_nationality",
+    "spouse_profession",
+)  # fmt: skip
 
 
 def get_or_create_client(*, name, phone="", email="", source=Client.Source.SITE, **extra):
@@ -149,6 +155,9 @@ def anonymize(client):
     """LGPD: apaga os dados pessoais do cliente e dos contatos/procuras ligados a ele."""
     client.name = ANON_NAME
     client.whatsapp = client.email = client.tags = client.notes = ""
+    for field in PERSONAL_QUALIFICATION_FIELDS:
+        setattr(client, field, "")
+    client.nationality = ""
     client.anonymized_at = timezone.now()
     client.save()
     client.interactions.update(text="")

@@ -1,5 +1,7 @@
 """Modelos-base (exemplos): o cliente revisa com o jurídico antes de usar."""
 
+import hashlib
+
 from .models import DocumentTemplate
 
 KIND = DocumentTemplate.Kind
@@ -43,7 +45,7 @@ Declaro ainda que:
 """
         + HEADER
         + """
-{{ cliente.nome }} apresenta proposta para o imóvel {{ imovel.codigo }} — {{ imovel.titulo }}, situado em {{ imovel.endereco }}, anunciado por {{ imovel.valor }}{% if imovel.valor_extenso %} ({{ imovel.valor_extenso }}){% endif %}.
+{{ cliente.qualificacao|default:cliente.nome }} apresenta proposta para o imóvel {{ imovel.codigo }} — {{ imovel.titulo }}, situado em {{ imovel.endereco }}, anunciado por {{ imovel.valor }}{% if imovel.valor_extenso %} ({{ imovel.valor_extenso }}){% endif %}.
 
 Valor proposto: R$ ______________ (______________________________________).
 Forma de pagamento: ______________________________________.
@@ -63,8 +65,10 @@ A proposta não obriga o proprietário e só se confirma com a assinatura do con
 """
         + HEADER
         + """
-LOCATÁRIO(A): {{ cliente.nome }}, WhatsApp {{ cliente.whatsapp }}.
-IMÓVEL: {{ imovel.codigo }} — {{ imovel.titulo }}, situado em {{ imovel.endereco }}.
+LOCADOR(A): {% if proprietario.nome %}{{ proprietario.qualificacao }}{% else %}______________________________{% endif %}.
+LOCATÁRIO(A): {{ cliente.qualificacao|default:cliente.nome }}, WhatsApp {{ cliente.whatsapp }}.
+{% if fiador.nome %}FIADOR(A): {{ fiador.qualificacao }}.
+{% endif %}IMÓVEL: {{ imovel.codigo }} — {{ imovel.titulo }}, situado em {{ imovel.endereco }}.
 
 CLÁUSULA 1ª — O prazo da locação é de ______ meses, com início em ____/____/______.
 
@@ -88,7 +92,7 @@ CLÁUSULA 5ª — O LOCATÁRIO devolverá o imóvel nas mesmas condições em qu
 """
         + HEADER
         + """
-CONTRATANTE: {{ cliente.nome }}, WhatsApp {{ cliente.whatsapp }}, e-mail {{ cliente.email }}.
+CONTRATANTE: {% if proprietario.nome %}{{ proprietario.qualificacao }}{% else %}{{ cliente.qualificacao|default:cliente.nome }}, WhatsApp {{ cliente.whatsapp }}, e-mail {{ cliente.email }}{% endif %}.
 IMÓVEL: {{ imovel.codigo }} — {{ imovel.titulo }}, situado em {{ imovel.endereco }}.
 
 CLÁUSULA 1ª — O CONTRATANTE autoriza {{ imobiliaria.nome }}{% if imobiliaria.cnpj %}, CNPJ {{ imobiliaria.cnpj }}{% endif %}, a intermediar a {{ imovel.finalidade }} do imóvel pelo valor de {{ imovel.valor }}{% if imovel.valor_extenso %} ({{ imovel.valor_extenso }}){% endif %}.
@@ -122,12 +126,38 @@ Por ser verdade, firmo o presente recibo.
 ]
 
 
+# SHA-256 do texto dos modelos-base da spec 022: se o texto salvo ainda é igual a um destes, o
+# cliente não editou e o modelo pode ser atualizado para a versão com qualificação das partes.
+LEGACY_HASHES = {
+    (KIND.PROPOSAL, "Proposta de compra ou locação"): (
+        "0d166cd1acb8a51776b905e0790bf98a3a6ad56e01b5c16aa7ac767946a02f8a"
+    ),
+    (KIND.RENTAL, "Contrato de locação (exemplo)"): (
+        "495d9eccac888b42024037aef628ddaa9cfcaefe699ee53a5a30627e6805cb24"
+    ),
+    (KIND.BROKERAGE, "Contrato de intermediação (exemplo)"): (
+        "6b97ff1e1e6ac56496608adbba205810e30d056cf4b466411545e82e30703108"
+    ),
+}
+
+
+def _sha(text):
+    return hashlib.sha256(text.replace("\r\n", "\n").encode()).hexdigest()
+
+
 def ensure_base_templates():
-    """Cria os modelos-base que ainda não existem (por tipo + nome). Devolve quantos criou."""
+    """Cria os modelos-base que não existem e atualiza os não editados (spec 022 → 026).
+
+    Devolve quantos criou. Modelo editado pelo cliente nunca é sobrescrito.
+    """
     created = 0
     for kind, name, body in BASE_TEMPLATES:
-        _obj, new = DocumentTemplate.objects.get_or_create(
+        obj, new = DocumentTemplate.objects.get_or_create(
             kind=kind, name=name, defaults={"body": body, "description": NOTICE}
         )
         created += new
+        legacy = LEGACY_HASHES.get((kind, name))
+        if not new and legacy and _sha(obj.body) == legacy:
+            obj.body = body
+            obj.save(update_fields=["body", "updated_at"])
     return created

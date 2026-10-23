@@ -73,5 +73,6 @@ Plano em `plans/plano-016-022-novas-funcoes.md`:
 - [x] 023 — Ajustes do site/painel (link Retornos, `MAX_FEATURED` no .env, código no card, preço por seção)
 - [x] 024 — Histórico do cliente em linha do tempo com "Registrar interação"
 - [x] 025 — Kanban de clientes (arrastar e soltar, últimos 30 dias em Fechado/Perdido)
+- [x] 026 — Qualificação das partes (cliente, proprietário, fiador), cônjuge e avisos nos contratos
 
 Plano em `plans/plano-023-027-ajustes-kanban-contratos.md` (024 histórico, 025 Kanban, 026 partes do contrato).

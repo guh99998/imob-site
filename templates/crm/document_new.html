@@ -21,6 +21,14 @@
   <form method="post">
     {% csrf_token %}
     {{ form.non_field_errors }}
+    {% if warnings %}
+    <div class="notice" role="alert">
+      <strong>Atenção:</strong>
+      <ul>{% for w in warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+      <p>Cadastre o(a) cônjuge na ficha da pessoa ou gere o documento mesmo assim.</p>
+      <label><input type="checkbox" name="confirm" value="1" style="display:inline"> Gerar mesmo assim</label>
+    </div>
+    {% endif %}
     {% for field in form %}
       <div class="row">
         <label for="{{ field.id_for_label }}">{{ field.label }}</label>

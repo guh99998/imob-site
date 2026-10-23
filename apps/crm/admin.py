@@ -20,7 +20,8 @@ from apps.core.admin_filters import AdvancedSearchMixin
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import FeatureGatedAdminMixin
 from apps.core.models import SiteSettings
-from apps.people.models import Broker
+from apps.people.admin import QUALIFICATION_FIELDSETS, QUALIFICATION_MASKS, SpouseStatusMixin
+from apps.people.models import Broker, Guarantor
 from apps.people.scoping import ScopedByRoleMixin, is_scoped, own_properties_q
 from apps.properties.models import Property
 
@@ -112,10 +113,20 @@ def _stage_action(stage):
 
 @admin.register(Client)
 class ClientAdmin(
-    AdvancedSearchMixin, FeatureGatedAdminMixin, ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin
+    AdvancedSearchMixin,
+    FeatureGatedAdminMixin,
+    ScopedByRoleMixin,
+    SpouseStatusMixin,
+    MaskedAdminMixin,
+    ModelAdmin,
 ):
     feature = "crm"
-    masks = {"whatsapp": "phone", "min_price": "money", "max_price": "money"}
+    masks = {
+        "whatsapp": "phone",
+        "min_price": "money",
+        "max_price": "money",
+        **QUALIFICATION_MASKS,
+    }
     list_display = (
         "name",
         "whatsapp",
@@ -129,7 +140,13 @@ class ClientAdmin(
     list_select_related = ("broker",)
     search_fields = ("name", "whatsapp", "email", "tags", "notes")
     search_help_text = _("Buscar por nome, WhatsApp, email ou etiqueta")
-    readonly_fields = ("lgpd_consent_at", "anonymized_at", "audit_created", "audit_updated")
+    readonly_fields = (
+        "lgpd_consent_at",
+        "anonymized_at",
+        "audit_created",
+        "audit_updated",
+        "spouse_status",
+    )
     inlines = [FollowUpInline]
     change_form_after_template = "admin/crm/client_timeline.html"
     actions_row = ["matching_row", "generate_document_row"]
@@ -155,6 +172,7 @@ class ClientAdmin(
                 "fields": ("purpose", "min_price", "max_price", "tags", "notes"),
             },
         ),
+        *[(title, {**options, "classes": ["tab"]}) for title, options in QUALIFICATION_FIELDSETS],
         (
             _("LGPD e registro"),
             {
@@ -528,8 +546,20 @@ class DocumentForm(forms.Form):
         widget=UnfoldAdminSelectWidget,
     )
 
+    guarantor = forms.ModelChoiceField(
+        label=_("Fiador (locação)"),
+        queryset=Guarantor.objects.none(),
+        required=False,
+        empty_label=_("(sem fiador)"),
+        widget=UnfoldAdminSelectWidget,
+    )
+
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
+        guarantors = Guarantor.objects.order_by("name")
+        if is_scoped(user):
+            guarantors = guarantors.filter(created_by=user)
+        self.fields["guarantor"].queryset = guarantors
         clients = Client.objects.filter(anonymized_at__isnull=True).order_by("name")
         properties = Property.objects.select_related("neighborhood").order_by("code")
         if is_scoped(user):
@@ -578,11 +608,24 @@ class GeneratedDocumentAdmin(FeatureGatedAdminMixin, ModelAdmin):
         form = DocumentForm(request.POST or None, initial=initial, user=request.user)
         if request.method == "POST" and form.is_valid():
             data = form.cleaned_data
+            warnings = documents.spouse_warnings(
+                data["template"].kind, property=data["property"], guarantor=data["guarantor"]
+            )
+            if warnings and not request.POST.get("confirm"):
+                context = {
+                    **self.admin_site.each_context(request),
+                    "title": _("Gerar documento"),
+                    "opts": self.model._meta,
+                    "form": form,
+                    "warnings": warnings,
+                }
+                return TemplateResponse(request, "crm/document_new.html", context)
             try:
                 doc = documents.generate(
                     data["template"],
                     client=data["client"],
                     property=data["property"],
+                    guarantor=data["guarantor"],
                     user=request.user,
                 )
             except documents.DocumentError as exc:
