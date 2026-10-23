@@ -9,7 +9,15 @@ from django.core.management.base import BaseCommand
 
 from apps.core.models import SiteSettings
 from apps.people.models import Broker, Owner, Partner
-from apps.properties.models import Category, City, Feature, Neighborhood, Property, PropertyPhoto
+from apps.properties.models import (
+    Category,
+    City,
+    Feature,
+    Neighborhood,
+    Property,
+    PropertyPhoto,
+    SearchQuery,
+)
 
 PHOTOS_DIR = Path(settings.BASE_DIR) / "demo" / "photos"
 
@@ -128,6 +136,15 @@ def extra_rows():
     return rows
 
 
+# Buscas de exemplo para a seção "Mais procurados" da home (as reais somam por cima).
+POPULAR_SEARCHES = [
+    ("category=apartamento&purpose=SALE", "Apartamento à venda", 12),
+    ("bedrooms=3&purpose=RENT", "Imóveis para alugar · 3+ quartos", 9),
+    ("category=casa&purpose=SALE", "Casa à venda", 7),
+    ("max_price=500000&purpose=SALE", "Imóveis à venda · até R$ 500.000", 5),
+]
+
+
 class Command(BaseCommand):
     help = "Cria dados de exemplo (DevLopesMóveis). Use --reset para recriar os imóveis de exemplo."
 
@@ -224,4 +241,8 @@ class Command(BaseCommand):
                     caption=title if order == 0 else "",
                 )
             created += 1
+        for key, label, count in POPULAR_SEARCHES:
+            SearchQuery.objects.get_or_create(
+                key=key, defaults={"label": label, "count": count, "results": 3}
+            )
         self.stdout.write(self.style.SUCCESS(f"Pronto: {created} imóvel(is) criado(s)."))

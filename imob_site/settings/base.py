@@ -244,6 +244,12 @@ UNFOLD = {
                         "badge": "apps.core.admin_navigation.new_searches_badge",
                         "permission": "apps.core.admin_navigation.can_view_search",
                     },
+                    {
+                        "title": _("Buscas no site"),
+                        "icon": "trending_up",
+                        "link": reverse_lazy("admin:properties_searchquery_changelist"),
+                        "permission": "apps.core.admin_navigation.can_view_searchquery",
+                    },
                 ],
             },
             {

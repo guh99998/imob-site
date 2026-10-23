@@ -2,7 +2,7 @@ import pytest
 from django.core.management import call_command
 
 from apps.core.models import SiteSettings
-from apps.properties.models import Property
+from apps.properties.models import Property, SearchQuery
 
 pytestmark = pytest.mark.django_db
 
@@ -15,6 +15,7 @@ def test_seed_demo_is_idempotent(settings, tmp_path):
     assert Property.objects.filter(status=Property.Status.SOLD).count() == 1
     assert SiteSettings.load().name == "DevLopesMóveis"
     assert SiteSettings.load().logo
+    assert SearchQuery.objects.count() == 4
     call_command("seed_demo")
     assert Property.objects.count() == first
     call_command("seed_demo", "--reset")

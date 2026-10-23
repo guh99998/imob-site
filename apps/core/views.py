@@ -7,6 +7,7 @@ from apps.leads.models import Lead
 from apps.leads.views import lead_page
 from apps.properties.filters import grouped_categories
 from apps.properties.models import PUBLIC_STATUSES, Category, City, Neighborhood, Property
+from apps.properties.searches import popular
 
 from . import seo
 from .models import SiteSettings
@@ -57,6 +58,7 @@ def home(request):
             "listing_action": reverse("core:advertise"),
             "cities": cities,
             "neighborhoods": neighborhoods,
+            "popular_searches": popular(),
         },
     )
 

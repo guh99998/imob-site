@@ -29,6 +29,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Código do imóvel é automático por categoria (`Category.code_prefix` + `CodeSequence`: CA001); nunca editar à mão.
 - Campos com máscara no admin: `MaskedAdminMixin` (`apps/core/admin_masks.py`) + `static/core/admin/masks.js`. Módulos opcionais por site: `FEATURES` / `apps/core/features.py`.
 - Favoritos do visitante: cookie `favs`, lido/gravado só por `apps/properties/favorites.py`; `favorite_codes`/`favorites_total` vêm do context processor (a view sobrescreve no contexto quando muda o cookie).
+- Buscas do site: `apps/properties/searches.py` grava `SearchQuery` (chave normalizada, sem dado pessoal, ignora robôs) a partir de `property_list`; a home lê `popular()`.
 - Views HTMX: detectar `request.htmx` e retornar partial de `templates/partials/`; a página deve funcionar sem JS.
 - Categorias de imóvel são cadastro editável (`Category`), não TextChoices.
 - CRUD é feito no Django Admin (django-unfold; sidebar em `UNFOLD["SIDEBAR"]`) — evoluir o admin antes de criar telas próprias.

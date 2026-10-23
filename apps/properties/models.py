@@ -514,3 +514,21 @@ class PropertyPhoto(models.Model):
         img.save(buf, format=fmt, quality=85)
         name = self.image.name.rsplit(".", 1)[0] + (".png" if fmt == "PNG" else ".jpg")
         self.image.save(name, ContentFile(buf.getvalue()), save=False)
+
+
+class SearchQuery(models.Model):
+    """Busca feita no site (só filtros, nada pessoal), para o "Mais procurados" e o painel."""
+
+    key = models.CharField(_("chave"), max_length=300, unique=True)
+    label = models.CharField(_("busca"), max_length=200)
+    count = models.PositiveIntegerField(_("vezes"), default=0)
+    results = models.PositiveIntegerField(_("imóveis encontrados"), default=0)
+    last_searched_at = models.DateTimeField(_("última vez"), default=timezone.now)
+
+    class Meta:
+        verbose_name = _("busca no site")
+        verbose_name_plural = _("buscas no site")
+        ordering = ["-count", "-last_searched_at"]
+
+    def __str__(self):
+        return self.label

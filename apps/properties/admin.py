@@ -23,6 +23,7 @@ from .models import (
     Neighborhood,
     Property,
     PropertyPhoto,
+    SearchQuery,
 )
 
 STATUS_LABELS = {
@@ -407,3 +408,20 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
             )
             return
         queryset.update(is_featured=True)
+
+
+@admin.register(SearchQuery)
+class SearchQueryAdmin(ModelAdmin):
+    """Só leitura: o que os visitantes mais procuram no site (dado de demanda)."""
+
+    list_display = ("label", "count", "results", "last_searched_at")
+    search_fields = ("label",)
+    search_help_text = _("Buscar pelo texto da busca")
+    ordering = ("-count", "-last_searched_at")
+    list_per_page = 50
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

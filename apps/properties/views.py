@@ -7,7 +7,7 @@ from django.views.decorators.http import require_POST
 from apps.core import seo
 from apps.leads.forms import LeadForm
 
-from . import favorites
+from . import favorites, searches
 from .filters import PropertyFilter
 from .models import Category, City, Property
 
@@ -58,6 +58,8 @@ def property_list(request, landing=None):
     f = PropertyFilter(data or None, queryset=_base_qs())
     paginator = Paginator(f.qs, PAGE_SIZE)
     page = paginator.get_page(request.GET.get("page"))
+    if not code:
+        searches.record(request, f, paginator.count)
     params = request.GET.copy()
     params.pop("page", None)
     ctx = {

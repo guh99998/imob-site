@@ -19,6 +19,7 @@ can_view_feature = _perm("properties.view_feature")
 can_view_city = _perm("properties.view_city")
 can_view_neighborhood = _perm("properties.view_neighborhood")
 can_view_lead = _perm("leads.view_lead")
+can_view_searchquery = _perm("properties.view_searchquery")
 can_view_settings = _perm("core.view_sitesettings")
 
 
