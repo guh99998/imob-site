@@ -1,0 +1,23 @@
+# Proxy único da VPS: HTTPS automático (Let's Encrypt) e um bloco por site.
+# Cada app é alcançado pelo apelido (alias) que declara na rede "proxy".
+
+imobiliaria.desenvolvedorgustavolopes.com.br {
+	encode zstd gzip
+
+	# Fotos enviadas pelo painel: volume compartilhado com o app (somente leitura aqui).
+	handle_path /media/* {
+		root * /srv/imob-media
+		header Cache-Control "public, max-age=2592000"
+		file_server
+	}
+
+	handle {
+		reverse_proxy imob-web:8000
+	}
+}
+
+# MoneyPilot: descomentar na migração (spec do MoneyPilot), depois de apontar o DNS.
+# moneypilot.desenvolvedorgustavolopes.com.br {
+# 	encode zstd gzip
+# 	reverse_proxy moneypilot:8080
+# }

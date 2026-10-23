@@ -1,0 +1,27 @@
+# Stack "proxy": o único contêiner que publica portas (80/443). Fica em /opt/proxy na VPS.
+# Pré-requisitos (uma vez): docker network create proxy && docker volume create imob_media
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    mem_limit: 128m
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - imob_media:/srv/imob-media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  imob_media:
+    external: true
+  caddy_data:
+  caddy_config:

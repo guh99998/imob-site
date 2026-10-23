@@ -1,0 +1,52 @@
+# imob-site em produção (VPS): Postgres + app. O HTTPS fica no Caddy compartilhado
+# (deploy/proxy). Pré-requisitos: docker network create proxy && docker volume create imob_media
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      POSTGRES_DB: imob
+      POSTGRES_USER: imob
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U imob -d imob"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    restart: unless-stopped
+    mem_limit: 640m
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://imob:${POSTGRES_PASSWORD}@db:5432/imob
+      WEB_CONCURRENCY: "2"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - imob_media:/app/media
+    networks:
+      default: {}
+      proxy:
+        aliases:
+          - imob-web
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/healthz/', timeout=4)"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+      start_period: 40s
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  pgdata:
+  imob_media:
+    external: true

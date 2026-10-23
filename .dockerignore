@@ -5,3 +5,10 @@ db.sqlite3
 media
 staticfiles
 __pycache__
+.env.*
+!.env.example
+.pytest_cache
+.ruff_cache
+specs
+plans
+demo
