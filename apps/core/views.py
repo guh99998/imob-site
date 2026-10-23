@@ -74,3 +74,13 @@ def contact(request):
 
 def privacy(request):
     return render(request, "core/privacy.html")
+
+
+def healthz(request):
+    """Healthcheck do contêiner: confirma que o app responde e o banco aceita consulta."""
+    from django.db import connection
+    from django.http import HttpResponse
+
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1")
+    return HttpResponse("ok", content_type="text/plain")

@@ -8,5 +8,7 @@ COPY . .
 ENV PATH="/app/.venv/bin:$PATH"
 RUN SECRET_KEY=build ALLOWED_HOSTS=* python manage.py tailwind build && \
     SECRET_KEY=build ALLOWED_HOSTS=* python manage.py collectstatic --noinput
+RUN useradd --system --no-create-home app &&     mkdir -p /app/media && chown app /app/media && chmod +x deploy/entrypoint.sh
+USER app
 EXPOSE 8000
-CMD ["gunicorn", "imob_site.wsgi", "--bind", "0.0.0.0:8000", "--workers", "3"]
+CMD ["deploy/entrypoint.sh"]

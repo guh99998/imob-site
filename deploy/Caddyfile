@@ -1,0 +1,15 @@
+# HTTPS automático (Let's Encrypt) para o domínio em DOMAIN. O Django fica atrás deste proxy.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Fotos enviadas pelo painel: volume compartilhado com o app (somente leitura aqui).
+	handle_path /media/* {
+		root * /srv/media
+		header Cache-Control "public, max-age=2592000"
+		file_server
+	}
+
+	handle {
+		reverse_proxy web:8000
+	}
+}

@@ -51,12 +51,14 @@ plans/      planejamentos
 ```
 
 ## Deploy
-Qualquer host que rode contêiner ou Python (não depende de uma plataforma específica).
-- `Dockerfile` pronto: compila o Tailwind, roda `collectstatic` e sobe o `gunicorn` na porta 8000.
-- Use `DJANGO_SETTINGS_MODULE=imob_site.settings.prod` e as variáveis de `.env.example` (`SECRET_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `DATABASE_URL` do PostgreSQL, e-mail).
-- Rode `python manage.py migrate --noinput` a cada versão nova, antes de subir o app.
-- Mídia (fotos) em disco ou em storage S3 compatível (`AWS_STORAGE_BUCKET_NAME` etc.).
-- Antes de publicar: `python manage.py check --deploy`.
+VPS com Docker Compose (spec 028): Postgres + app (gunicorn) + Caddy com HTTPS automático.
+1. Na VPS: instale Docker, clone o repositório e `cp .env.production.example .env` (preencha `DOMAIN`, `POSTGRES_PASSWORD`, `SECRET_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, e-mail). Aponte o DNS do domínio para a VPS.
+2. `docker compose up -d --build` (as migrations rodam no start do app).
+3. Superusuário: `docker compose exec web python manage.py createsuperuser`.
+4. Atualizar: `git pull && docker compose up -d --build`.
+5. Backup: `docker compose exec db pg_dump -U imob imob > backup.sql` e copie o volume `media` (fotos). Com S3 (`AWS_STORAGE_BUCKET_NAME`) as fotos saem do volume.
+- Healthcheck: `GET /healthz/`. Fotos em `/media/` são servidas pelo Caddy; estáticos pelo WhiteNoise.
+- Sem Docker: qualquer host Python com `DJANGO_SETTINGS_MODULE=imob_site.settings.prod`, `migrate --noinput` a cada versão e `check --deploy` antes de publicar.
 
 ## Fluxo de trabalho
 Spec-driven: toda feature nasce em `specs/NNN-nome.md` (copiar `specs/000-template.md`). Ao terminar, marcar as tarefas, `Status: Concluído`, e atualizar este README e o `CLAUDE.md`. Branch de trabalho: `develop`; `main` recebe só o que está concluído.
