@@ -16,6 +16,12 @@ imobiliaria.desenvolvedorgustavolopes.com.br {
 	}
 }
 
+# MoneyPilot, ensaio da migração (domínio de teste; sai depois da migração).
+moneypilot-teste.desenvolvedorgustavolopes.com.br {
+	encode zstd gzip
+	reverse_proxy moneypilot:8080
+}
+
 # MoneyPilot: descomentar na migração (spec do MoneyPilot), depois de apontar o DNS.
 # moneypilot.desenvolvedorgustavolopes.com.br {
 # 	encode zstd gzip
