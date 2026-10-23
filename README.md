@@ -51,13 +51,14 @@ plans/      planejamentos
 ```
 
 ## Deploy
-VPS com Docker Compose (spec 028): Postgres + app (gunicorn) + Caddy com HTTPS automático.
-1. Na VPS: instale Docker, clone o repositório e `cp .env.production.example .env` (preencha `DOMAIN`, `POSTGRES_PASSWORD`, `SECRET_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, e-mail). Aponte o DNS do domínio para a VPS.
-2. `docker compose up -d --build` (as migrations rodam no start do app).
-3. Superusuário: `docker compose exec web python manage.py createsuperuser`.
-4. Atualizar: `git pull && docker compose up -d --build`.
-5. Backup: `docker compose exec db pg_dump -U imob imob > backup.sql` e copie o volume `media` (fotos). Com S3 (`AWS_STORAGE_BUCKET_NAME`) as fotos saem do volume.
-- Healthcheck: `GET /healthz/`. Fotos em `/media/` são servidas pelo Caddy; estáticos pelo WhiteNoise.
+VPS com Docker Compose (spec 028). O **Caddy** (HTTPS automático) é uma stack à parte em `deploy/proxy/`, compartilhada com outros apps da mesma VPS; este compose tem só `db` (Postgres) e `web` (gunicorn). Layout na VPS: `/opt/proxy`, `/opt/imob-site`, `/opt/backups`.
+1. Uma vez por VPS: `docker network create proxy && docker volume create imob_media`; copie `deploy/proxy/*` para `/opt/proxy`. O `Caddyfile` tem um bloco por domínio.
+2. Em `/opt/imob-site`: clone o repositório e `cp .env.production.example .env` (preencha `POSTGRES_PASSWORD`, `SECRET_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, e-mail; `chmod 600 .env`). Aponte o DNS (registro A, sem proxy da Cloudflare) para a VPS.
+3. `docker compose up -d --build` (as migrations rodam no start do app), depois `docker compose up -d` em `/opt/proxy`.
+4. Superusuário: `docker compose exec web python manage.py createsuperuser`.
+5. Atualizar: `git pull && docker compose up -d --build`.
+6. Backup: `deploy/backup.sh` grava `db-*.sql.gz` e `media-*.tar.gz` em `/opt/backups` (14 dias); agende no cron e copie para fora da VPS. Restaurar o banco: `gunzip -c db-X.sql.gz | docker compose exec -T db psql -U imob imob`. Com S3 (`AWS_STORAGE_BUCKET_NAME`) as fotos saem do volume.
+- Healthcheck: `GET /healthz/`. Fotos em `/media/` são servidas pelo Caddy (volume `imob_media`); estáticos pelo WhiteNoise. Só o Caddy publica portas (80/443); o banco nunca.
 - Sem Docker: qualquer host Python com `DJANGO_SETTINGS_MODULE=imob_site.settings.prod`, `migrate --noinput` a cada versão e `check --deploy` antes de publicar.
 
 ## Fluxo de trabalho
