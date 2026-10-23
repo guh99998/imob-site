@@ -70,6 +70,7 @@ def property_list(request, landing=None):
         "chips": _active_filters(f, request),
         "landing": landing,
         "code_not_found": code,
+        "price_mode": data.get("purpose", ""),
         # Só a lista "limpa" e as landings sem filtros extras são indexáveis.
         "noindex": bool(request.GET),
     }

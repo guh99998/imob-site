@@ -193,12 +193,8 @@ def test_home_hero_has_no_pause_button_and_has_jsonld(client):
     assert "RealEstateAgent" in html
 
 
-def test_home_featured_respects_limit(client):
-    from apps.core.models import SiteSettings
-
-    site = SiteSettings.load()
-    site.max_featured = 2
-    site.save()
+def test_home_featured_respects_limit(client, settings):
+    settings.MAX_FEATURED = 2
     PropertyFactory.create_batch(4, is_featured=True)
     assert len(client.get("/").context["featured"]) == 2
 

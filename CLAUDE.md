@@ -29,7 +29,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Choices com `models.TextChoices`. Preços em `DecimalField(max_digits=12, decimal_places=2)`.
 - Público só vê imóveis `Property.objects.published()` (publicado + reservado; vendido/alugado só no painel).
 - Código do imóvel é automático por categoria (`Category.code_prefix` + `CodeSequence`: CA001); nunca editar à mão.
-- Campos com máscara no admin: `MaskedAdminMixin` (`apps/core/admin_masks.py`) + `static/core/admin/masks.js`. Módulos opcionais por site: `FEATURES` / `apps/core/features.py`.
+- Campos com máscara no admin: `MaskedAdminMixin` (`apps/core/admin_masks.py`) + `static/core/admin/masks.js`. Módulos opcionais por site: `FEATURES` / `apps/core/features.py`. Limite de destaques: `MAX_FEATURED` no `.env` (padrão 3). Links dinâmicos da sidebar do Unfold: passar o callable importado (string só vale em `badge`/`permission`). Card de imóvel recebe `price_mode` (SALE/RENT/vazio); imóvel BOTH sem seção mostra os dois preços (`Property.price_for`).
 - Favoritos do visitante: cookie `favs`, lido/gravado só por `apps/properties/favorites.py`; `favorite_codes`/`favorites_total` vêm do context processor (a view sobrescreve no contexto quando muda o cookie).
 - Buscas do site: `apps/properties/searches.py` grava `SearchQuery` (chave normalizada, sem dado pessoal, ignora robôs) a partir de `property_list`; a home lê `popular()`.
 - Duplicados: `apps/properties/duplicates.py` (`find_duplicates`, `refresh_hints`, `dismiss`); `Property.duplicate_hint` é só cache para a lista do painel, recalculado ao salvar no admin e por `manage.py find_duplicates`. Vendido/alugado não entram na comparação.

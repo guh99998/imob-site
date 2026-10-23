@@ -65,12 +65,6 @@ class Category(models.Model):
     order = models.PositiveSmallIntegerField(
         _("ordem"), default=0, help_text=_("Categorias com número menor aparecem primeiro.")
     )
-    icon = models.CharField(
-        _("ícone"),
-        max_length=50,
-        blank=True,
-        help_text=_("Opcional. Nome de um ícone do Material Symbols (ex.: home)."),
-    )
     code_prefix = models.CharField(
         _("prefixo do código"),
         max_length=2,
@@ -150,7 +144,6 @@ class Neighborhood(models.Model):
 
 class Feature(models.Model):
     name = models.CharField(_("nome"), max_length=80, unique=True)
-    icon = models.CharField(_("ícone"), max_length=50, blank=True)
 
     class Meta:
         verbose_name = _("comodidade")
@@ -367,15 +360,13 @@ class Property(models.Model):
         if self.purpose in (self.Purpose.RENT, self.Purpose.BOTH) and not self.rent_price:
             errors["rent_price"] = _("Informe o valor do aluguel.")
         if self.is_featured and self.status in PUBLIC_STATUSES:
-            from apps.core.models import SiteSettings
-
-            limit = SiteSettings.load().max_featured
+            limit = settings.MAX_FEATURED
             others = Property.objects.filter(is_featured=True, status__in=PUBLIC_STATUSES)
             if self.pk:
                 others = others.exclude(pk=self.pk)
             if others.count() >= limit:
                 errors["is_featured"] = _(
-                    "Já existem %(n)d imóveis em destaque (limite das configurações). "
+                    "Já existem %(n)d imóveis em destaque (limite do site). "
                     "Tire o destaque de outro imóvel primeiro."
                 ) % {"n": limit}
         if errors:
@@ -402,6 +393,14 @@ class Property(models.Model):
         if self.purpose == self.Purpose.RENT:
             return self.rent_price
         return self.sale_price or self.rent_price
+
+    def price_for(self, purpose):
+        """Preço da seção (venda/aluguel) em que o imóvel aparece; None se não houver seção."""
+        if purpose == self.Purpose.RENT:
+            return self.rent_price
+        if purpose == self.Purpose.SALE:
+            return self.sale_price
+        return None
 
     def share_url(self, request=None, source=None):
         path = self.get_absolute_url()

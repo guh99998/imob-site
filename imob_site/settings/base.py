@@ -4,7 +4,7 @@ import environ
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.admin_navigation import site_settings_link
+from apps.core.admin_navigation import followups_link, site_settings_link
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -96,6 +96,9 @@ STORAGES = {
 }
 
 # Módulos do painel ligados neste site (env FEATURES="brokers,partners,owners,searches").
+# Máximo de imóveis em destaque (a home mostra até 3).
+MAX_FEATURED = env.int("MAX_FEATURED", default=3)
+
 SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches", "crm"])
 
 # API aberta (módulo opcional `api`, desligado por padrão): chaves criadas no painel.
@@ -245,7 +248,7 @@ UNFOLD = {
                     {
                         "title": _("Retornos"),
                         "icon": "event_upcoming",
-                        "link": "apps.core.admin_navigation.followups_link",
+                        "link": followups_link,
                         "badge": "apps.core.admin_navigation.overdue_followups_badge",
                         "permission": "apps.core.admin_navigation.can_view_followup",
                     },

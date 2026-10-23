@@ -123,7 +123,6 @@ class SiteSettingsAdmin(MaskedAdminMixin, ModelAdmin):
             _("Contato"),
             {"fields": ("phone", "whatsapp", "email", "address", "instagram", "facebook")},
         ),
-        (_("Site"), {"fields": ("max_featured",)}),
     )
 
     @display(description=_("pré-visualização"))

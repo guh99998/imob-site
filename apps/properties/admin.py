@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404, redirect
@@ -12,7 +13,6 @@ from unfold.decorators import action, display
 from apps.core.admin_filters import AdvancedSearchMixin, dropdown_filter
 from apps.core.admin_masks import MaskedAdminMixin
 from apps.core.features import enabled
-from apps.core.models import SiteSettings
 from apps.crm import documents as crm_documents
 from apps.people.scoping import ScopedByRoleMixin, is_scoped
 
@@ -45,7 +45,7 @@ def format_brl(value):
 class CategoryAdmin(ModelAdmin):
     list_display = ("name", "code_prefix", "properties_count")
     search_fields = ("name",)
-    fields = ("name", "code_prefix", "order", "icon")
+    fields = ("name", "code_prefix", "order")
     ordering_field = "order"
     hide_ordering_field = True
 
@@ -92,7 +92,7 @@ class NeighborhoodAdmin(AdvancedSearchMixin, ModelAdmin):
 
 @admin.register(Feature)
 class FeatureAdmin(ModelAdmin):
-    list_display = ("name", "icon")
+    list_display = ("name",)
     search_fields = ("name",)
 
 
@@ -460,7 +460,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
 
     @admin.action(description=_("Destacar selecionados"))
     def feature(self, request, queryset):
-        limit = SiteSettings.load().max_featured
+        limit = settings.MAX_FEATURED
         current = Property.objects.filter(is_featured=True, status__in=PUBLIC_STATUSES).count()
         to_add = queryset.filter(is_featured=False, status__in=PUBLIC_STATUSES).count()
         if current + to_add > limit:
@@ -468,7 +468,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
                 request,
                 _(
                     "Limite de %(limit)d destaques. Hoje há %(current)d; tire o destaque de "
-                    "algum imóvel antes (ou aumente o limite em Configurações)."
+                    "algum imóvel antes."
                 )
                 % {"limit": limit, "current": current},
                 messages.ERROR,
