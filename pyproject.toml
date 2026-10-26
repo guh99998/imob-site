@@ -17,6 +17,8 @@ dependencies = [
     "django-unfold>=0.110.0",
     "djangorestframework>=3.18.3",
     "drf-spectacular>=0.30.0",
+    "openpyxl>=3.1.5",
+    "defusedxml>=0.7.1",
 ]
 
 [dependency-groups]

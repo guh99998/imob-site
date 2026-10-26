@@ -10,7 +10,7 @@
 {% block content %}
 <style>
   .dlm-dash { display: grid; gap: 1.5rem; }
-  .dlm-shortcuts { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+  .dlm-shortcuts { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
   .dlm-shortcut {
     display: flex; align-items: center; gap: .75rem; padding: 1.25rem 1.5rem;
     border: 1px solid rgb(0 0 0 / .12); border-radius: 4px; font-weight: 600; font-size: 1.05rem;
@@ -21,11 +21,11 @@
   .dlm-shortcut.is-primary:hover { background: var(--color-primary-800); }
   .dlm-shortcut .material-symbols-outlined { font-size: 1.75rem; }
   .dlm-badge { margin-left: auto; background: var(--color-primary-700); color: #fff; border-radius: 999px; padding: 0 .6rem; font-size: .85rem; }
-  .dlm-numbers { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
+  .dlm-numbers { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr)); }
   .dlm-number { padding: 1rem 1.25rem; border: 1px solid rgb(0 0 0 / .12); border-radius: 4px; background: var(--color-white, #fff); }
   .dlm-number strong { display: block; font-size: 2.25rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .dlm-number span { font-size: .875rem; opacity: .7; }
-  .dlm-lists { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
+  .dlm-lists { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); }
   .dlm-panel { border: 1px solid rgb(0 0 0 / .12); border-radius: 4px; background: var(--color-white, #fff); }
   .dlm-panel h2 { margin: 0; padding: 1rem 1.25rem; font-weight: 600; border-bottom: 1px solid rgb(0 0 0 / .12); }
   .dlm-panel ul { list-style: none; margin: 0; padding: 0; }
@@ -35,6 +35,13 @@
   .dlm-panel li small { opacity: .65; margin-left: auto; white-space: nowrap; }
   .dlm-panel img { width: 56px; height: 40px; object-fit: cover; border-radius: 2px; }
   .dlm-empty { padding: 1rem 1.25rem; opacity: .65; }
+  @media (max-width: 767px) {
+    .dlm-shortcut { padding: 1rem 1.1rem; font-size: 1rem; }
+    .dlm-number { padding: .8rem 1rem; }
+    .dlm-number strong { font-size: 1.75rem; }
+    .dlm-panel li { flex-wrap: wrap; }
+    .dlm-panel li small { margin-left: 0; white-space: normal; width: 100%; }
+  }
 </style>
 
 <div class="dlm-dash">
@@ -93,7 +100,7 @@
         <li>
           <a href="{% url 'admin:crm_client_change' f.client_id %}">{{ f.client.name }}</a>
           <span>{{ f.note }}</span>
-          <small>{% if f.is_overdue %}<strong>{% trans "Atrasado" %}</strong> · {% endif %}{{ f.due_date|date:"d/m/Y" }}</small>
+          <small>{% if f.broker %}{{ f.broker.name }} · {% endif %}{% if f.is_overdue %}<strong>{% trans "Atrasado" %}</strong> · {% endif %}{{ f.due_date|date:"d/m/Y" }}</small>
         </li>
       {% empty %}
         <li class="dlm-empty">{% trans "Nenhum retorno para hoje." %}</li>

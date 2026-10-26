@@ -26,6 +26,8 @@
 <body class="min-h-screen flex flex-col" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <a href="#conteudo" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-surface focus:p-3">Ir para o conteúdo</a>
 
+  {% if demo_mode %}<div class="bg-fg text-surface text-center text-sm py-2 px-4">Site de demonstração — imóveis e dados fictícios</div>{% endif %}
+
   <header class="bg-surface text-fg border-b border-line sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between gap-4">
       <a href="{% url 'core:home' %}" class="flex items-center gap-3 min-w-0">

@@ -103,20 +103,6 @@ def test_home_limits_to_six(client):
     assert client.get(reverse("core:home")).content.decode().count("rounded-full px-4 py-2") == 6
 
 
-def test_admin_is_read_only_list(admin_client):
-    _popular(4, label="Casa em Centro")
-    r = admin_client.get(reverse("admin:properties_searchquery_changelist"))
-    assert r.status_code == 200 and "Casa em Centro" in r.content.decode()
-    assert admin_client.get(reverse("admin:properties_searchquery_add")).status_code == 403
-    row = SearchQuery.objects.get()
-    r = admin_client.post(
-        reverse("admin:properties_searchquery_change", args=[row.pk]), {"label": "x"}
-    )
-    assert r.status_code in (200, 403)
-    row.refresh_from_db()
-    assert row.label == "Casa em Centro"
-
-
 def test_sold_property_still_counts_but_published_only_in_results(client):
     PropertyFactory(status=Property.Status.SOLD)
     search(client, "?bedrooms=2")

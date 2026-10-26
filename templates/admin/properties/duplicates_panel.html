@@ -1,0 +1,29 @@
+{% if generic %}
+<div class="pa-panel pa-warn" role="alert">
+  Já existe no sistema um imóvel parecido com este. Você pode continuar; fale com o gerente depois de salvar.
+</div>
+{% else %}
+<div class="pa-panel pa-warn" role="alert" data-duplicates>
+  <p class="pa-title">Imóvel possivelmente duplicado — ver opções parecidas?</p>
+  <ul class="pa-cards">
+    {% for item in items %}
+    <li class="pa-card" data-duplicate-id="{{ item.prop.pk }}">
+      {% if item.cover %}<img src="{{ item.cover.src_sm }}" alt="">{% else %}<span class="pa-nophoto">Sem foto</span>{% endif %}
+      <div class="pa-card-body">
+        <p class="pa-card-name">{{ item.prop.code }} – {{ item.prop.title }}</p>
+        <p>{% if item.price %}{{ item.price }} · {% endif %}{{ item.prop.get_status_display }}</p>
+        <p>{{ item.prop.full_address }}</p>
+        <p class="pa-muted">{{ item.level|capfirst }}</p>
+        {% if not fallback %}<a href="{{ item.url }}" class="pa-btn">Quero atualizar esse imóvel</a>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if fallback %}
+  <label class="pa-confirm"><input type="checkbox" name="not_duplicate" value="on"> Confirmo que este imóvel não é duplicado</label>
+  <p class="pa-muted">Marque a caixa e salve de novo (as fotos precisam ser escolhidas outra vez). Para atualizar um imóvel existente, abra-o pela lista.</p>
+  {% else %}
+  <button type="button" data-not-duplicate class="pa-btn">Não é duplicado</button>
+  {% endif %}
+</div>
+{% endif %}

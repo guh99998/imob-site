@@ -1,0 +1,36 @@
+/* Admin no celular (spec 034): o Unfold já empilha formulários e filtros; aqui ficam as listas,
+   o kanban e os painéis que montamos por cima. Só vale abaixo de 768 px. */
+
+@media (max-width: 767px) {
+  /* Listas: cada linha da tabela vira um cartão "rótulo: valor" (rótulos vêm de mobile.js). */
+  table.result-list,
+  table.result-list tbody { display: block; width: 100%; }
+  table.result-list thead { display: none; }
+  table.result-list tbody { display: grid; gap: .75rem; padding: .75rem; }
+  table.result-list tr.data-row {
+    display: grid; position: relative; padding: .5rem .75rem;
+    border: 1px solid color-mix(in srgb, currentColor 16%, transparent); border-radius: 6px;
+  }
+  table.result-list tr.data-row > td,
+  table.result-list tr.data-row > th {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    height: auto !important; min-height: 0; padding: .3rem 0 !important; border: 0 !important;
+    text-align: right; overflow: visible; white-space: normal;
+  }
+  table.result-list tr.data-row > [data-label]:not([data-label=""])::before {
+    content: attr(data-label); flex: none; max-width: 40%; text-align: left;
+    font-size: .75rem; font-weight: 600; opacity: .65;
+  }
+  table.result-list tr.data-row > td.action-checkbox { justify-content: flex-end; }
+  table.result-list tr.data-row img { height: 56px !important; width: 80px !important; border-radius: 4px; }
+  table.result-list .field-cover_preview { justify-content: flex-start; }
+  table.result-list .field-cover_preview::before { content: none !important; }
+  table.result-list tr.data-row > [data-empty] { display: none; }
+
+  /* Alvos de toque confortáveis nos botões que criamos. */
+  .pa-btn, .view-toggle a { min-height: 2.75rem; display: inline-flex; align-items: center; }
+  .pa-cards { grid-template-columns: 1fr; }
+  .pa-stats { gap: 1rem; }
+  .pa-map td { display: block; padding-right: 0; }
+  .pa-map select { width: 100%; }
+}

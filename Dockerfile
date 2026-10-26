@@ -6,6 +6,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY . .
 ENV PATH="/app/.venv/bin:$PATH"
+RUN apt-get update && apt-get install -y --no-install-recommends gettext && \
+    rm -rf /var/lib/apt/lists/* && \
+    SECRET_KEY=build ALLOWED_HOSTS=* python manage.py compilemessages -l pt_BR
 RUN SECRET_KEY=build ALLOWED_HOSTS=* python manage.py tailwind build && \
     SECRET_KEY=build ALLOWED_HOSTS=* python manage.py collectstatic --noinput
 RUN useradd --system --create-home app && \

@@ -1,0 +1,71 @@
+/* Painéis do admin de imóveis (duplicados, histórico, fotos em lote, importação).
+   O Unfold só traz o CSS das classes que ele mesmo usa, então estes blocos têm estilo próprio. */
+
+.pa-panel { border: 1px solid rgb(0 0 0 / .14); border-radius: 4px; padding: 1rem; margin: 0 0 1rem; }
+.pa-warn { background: #fffbeb; border-color: #fcd34d; color: #78350f; }
+.pa-title { margin: 0; font-weight: 600; }
+.pa-muted { opacity: .7; font-size: .875rem; }
+.pa-cards { list-style: none; margin: .75rem 0 0; padding: 0; display: grid; gap: .75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+.pa-card { display: flex; gap: .75rem; background: #fff; color: #1f2937; border: 1px solid #fde68a;
+  border-radius: 4px; padding: .75rem; font-size: .875rem; }
+.pa-card img, .pa-nophoto { width: 5rem; height: 5rem; flex: none; border-radius: 4px; }
+.pa-card img { object-fit: cover; }
+.pa-nophoto { background: #f3f4f6; color: #6b7280; display: flex; align-items: center;
+  justify-content: center; text-align: center; font-size: .7rem; }
+.pa-card-body { min-width: 0; }
+.pa-card-body p { margin: 0 0 .15rem; }
+.pa-card-name { font-weight: 600; }
+.pa-btn { display: inline-block; margin-top: .5rem; padding: .375rem .75rem; border: 1px solid #d97706;
+  border-radius: 4px; background: #fff; color: #78350f; font-weight: 500; font-size: .875rem;
+  cursor: pointer; text-decoration: none; }
+.pa-btn:hover { background: #fef3c7; }
+.pa-btn-primary { background: var(--color-primary-600, #7c3aed); border-color: var(--color-primary-600, #7c3aed); color: #fff; }
+.pa-btn-primary:hover { background: var(--color-primary-700, #6d28d9); }
+.pa-btn[disabled] { opacity: .5; cursor: not-allowed; }
+.pa-confirm { display: flex; align-items: center; gap: .5rem; margin-top: .75rem; font-weight: 500; }
+
+/* Histórico */
+.pa-history { margin-top: 2rem; }
+.pa-history h2 { font-size: 1.125rem; font-weight: 600; margin: 0 0 .75rem; }
+.pa-history ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.pa-history > ul > li { border: 1px solid rgb(0 0 0 / .14); border-radius: 4px; padding: .75rem; font-size: .875rem; }
+.pa-history li ul { list-style: disc; padding-left: 1.25rem; margin-top: .25rem; gap: .1rem; }
+.pa-history .pa-source { font-weight: 400; opacity: .7; font-size: .75rem; }
+
+/* Fotos em lote */
+.pa-drop { border: 2px dashed rgb(0 0 0 / .25); border-radius: 4px; padding: 1.25rem; text-align: center; }
+.pa-drop.is-over { background: rgb(0 0 0 / .05); }
+.pa-drop input[type=file] { max-width: 100%; }
+.pa-drop-hint { margin: .5rem 0 0; font-size: .875rem; opacity: .75; }
+.pa-drop-count { margin: .25rem 0 0; font-weight: 500; }
+.pa-drop-list { margin: .25rem 0 0; padding: 0; list-style: none; max-height: 8rem; overflow: auto;
+  text-align: left; font-size: .75rem; }
+
+/* Importação */
+.pa-import { max-width: 56rem; display: grid; gap: 1.5rem; }
+.pa-import h2 { font-size: 1.125rem; font-weight: 600; margin: 0 0 .5rem; }
+.pa-import h3 { font-weight: 600; margin: 1rem 0 .25rem; }
+.pa-stats { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1.5rem; font-size: .875rem; }
+.pa-stats strong { font-size: 1.5rem; display: block; line-height: 1.1; }
+.pa-bar { height: .75rem; width: 100%; border-radius: 999px; background: rgb(0 0 0 / .12); overflow: hidden; }
+.pa-bar > div { height: 100%; background: var(--color-primary-600, #7c3aed); }
+.pa-list { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .25rem; font-size: .875rem; }
+.pa-err { color: #b91c1c; }
+.pa-warning { color: #b45309; }
+.pa-help ol { margin: .5rem 0 0; padding-left: 1.5rem; list-style: decimal; display: grid; gap: .25rem; font-size: .875rem; }
+.pa-help code, .pa-import code { background: rgb(0 0 0 / .07); padding: 0 .25rem; border-radius: 3px; }
+.pa-map td { padding: .25rem 1rem .25rem 0; font-size: .875rem; }
+.pa-map select { border: 1px solid rgb(0 0 0 / .25); border-radius: 4px; padding: .25rem .5rem; background: #fff; color: #111; }
+
+/* Modo visualização do imóvel */
+.pa-viewbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent); border-radius: 4px;
+  padding: .75rem 1rem; margin-bottom: 1rem; background: color-mix(in srgb, currentColor 4%, transparent); }
+.pa-viewbar.is-editing { border-color: #fcd34d; background: #fffbeb; color: #78350f; }
+.pa-viewbar-text { margin: 0; font-size: .9rem; }
+.pa-viewbar .pa-btn { margin-top: 0; }
+.pa-viewbar [hidden] { display: none; }
+/* Sem edição, não há o que salvar nem remover. */
+body.pa-viewing #submit-row { display: none; }
+body.pa-viewing .add-row, body.pa-viewing .delete-row { display: none; }

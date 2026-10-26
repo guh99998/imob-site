@@ -169,16 +169,22 @@
   });
 })();
 </script>
-{% endblock %}
-
 <script>
 document.querySelectorAll("[data-share]").forEach(function (el) {
   el.addEventListener("click", function (e) {
-    if (!navigator.clipboard) return;
     e.preventDefault();
-    navigator.clipboard.writeText(el.href).then(function () {
-      el.parentNode.querySelector("[data-share-feedback]").textContent = "Link copiado";
-    });
+    var feedback = el.parentNode.querySelector("[data-share-feedback]");
+    function done() { if (feedback) feedback.textContent = "Link copiado"; }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(el.href).then(done);
+      return;
+    }
+    var t = document.createElement("textarea");
+    t.value = el.href; t.setAttribute("readonly", ""); t.style.position = "fixed"; t.style.opacity = "0";
+    document.body.appendChild(t); t.select();
+    try { if (document.execCommand("copy")) done(); } catch (err) {}
+    document.body.removeChild(t);
   });
 });
 </script>
+{% endblock %}

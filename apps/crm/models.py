@@ -271,6 +271,13 @@ class GeneratedDocument(models.Model):
         verbose_name=_("imóvel"),
     )
     html = models.TextField(_("conteúdo"))
+    original_html = models.TextField(
+        _("texto original"),
+        blank=True,
+        editable=False,
+        help_text=_("Guardado na primeira edição, para restaurar."),
+    )
+    edited_at = models.DateTimeField(_("editado em"), null=True, blank=True, editable=False)
     generated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,

@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from apps.leads.models import Lead
+from apps.properties import reviews
 from apps.properties.models import Property
 
 
@@ -57,7 +58,7 @@ def crm_context(request):
         ],
         "followups": list(
             pending.filter(due_date__lte=today + timedelta(days=3))
-            .select_related("client")
+            .select_related("client", "broker")
             .order_by("due_date")[:8]
         ),
         "shortcuts": [
@@ -93,6 +94,7 @@ def dashboard_callback(request, context):
         updated_at__month=today.month,
     ).count()
     new_leads = leads.filter(status=Lead.Status.NEW).count()
+    reviews_pending = reviews.pending(properties).count()
     crm = crm_context(request)
 
     context.update(
@@ -111,6 +113,12 @@ def dashboard_callback(request, context):
                     + f"?status__exact={Lead.Status.NEW}",
                     "badge": new_leads or None,
                 },
+                {
+                    "label": _("Revisões pendentes"),
+                    "icon": "event_repeat",
+                    "url": reverse("admin:properties_property_changelist") + "?review=overdue",
+                    "badge": reviews_pending or None,
+                },
                 *crm["shortcuts"],
                 {"label": _("Abrir o site"), "icon": "open_in_new", "url": "/"},
             ],
@@ -122,6 +130,10 @@ def dashboard_callback(request, context):
                 {
                     "label": _("Rascunhos"),
                     "value": properties.filter(status=S.DRAFT).count(),
+                },
+                {
+                    "label": _("Revisões pendentes"),
+                    "value": reviews_pending,
                 },
                 {"label": _("Vendidos/alugados no mês"), "value": month_closed},
                 {"label": _("Mensagens novas"), "value": new_leads},

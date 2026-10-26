@@ -106,6 +106,27 @@ class PropertySearch(models.Model):
     def __str__(self):
         return f"{self.name} ({self.created_at:%d/%m/%Y})"
 
+    def matching_count(self):
+        """Quantos imóveis publicados batem com a procura (mesmos critérios de matching_query)."""
+        from apps.properties.models import Property
+
+        price = "rent_price" if self.purpose == "RENT" else "sale_price"
+        qs = Property.objects.published().filter(purpose__in=[self.purpose, "BOTH"])
+        ids = list(self.categories.values_list("pk", flat=True))
+        if ids:
+            qs = qs.filter(category_id__in=ids)
+        if self.city_id:
+            qs = qs.filter(neighborhood__city_id=self.city_id)
+        if self.min_price:
+            qs = qs.filter(**{f"{price}__gte": self.min_price})
+        if self.max_price:
+            qs = qs.filter(**{f"{price}__lte": self.max_price})
+        if self.min_bedrooms:
+            qs = qs.filter(bedrooms__gte=self.min_bedrooms)
+        if self.min_parking:
+            qs = qs.filter(parking_spaces__gte=self.min_parking)
+        return qs.count()
+
     def matching_query(self):
         """Parâmetros (lookups de admin) para listar imóveis compatíveis."""
         params = {}

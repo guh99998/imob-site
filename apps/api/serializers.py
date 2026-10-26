@@ -151,3 +151,85 @@ class PropertySerializer(serializers.ModelSerializer):
     def get_photos(self, obj) -> list[str]:
         request = self.context["request"]
         return [request.build_absolute_uri(p.src_lg) for p in obj.photos.all()]
+
+
+def _money(**kw):
+    return serializers.DecimalField(max_digits=12, decimal_places=2, allow_null=True, **kw)
+
+
+class PropertyWriteSerializer(serializers.Serializer):
+    """Entrada de POST/PATCH de imóveis. Categoria, cidade, bairro e comodidades vão por nome."""
+
+    external_ref = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Seu identificador do imóvel; reenviar o mesmo valor atualiza, não duplica.",
+    )
+    title = serializers.CharField(max_length=200)
+    description = serializers.CharField(required=False, allow_blank=True)
+    purpose = serializers.ChoiceField(choices=Property.Purpose.choices, required=False)
+    status = serializers.ChoiceField(
+        choices=Property.Status.choices,
+        required=False,
+        help_text="Padrão ao criar: DRAFT (rascunho).",
+    )
+    category = serializers.CharField(help_text="Nome ou prefixo da categoria (ex.: Casa ou CA).")
+    city = serializers.CharField(max_length=100, required=False)
+    state = serializers.CharField(
+        max_length=2, required=False, help_text="UF; só necessária para cadastrar uma cidade nova."
+    )
+    neighborhood = serializers.CharField(max_length=100, required=False)
+    street = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    complement = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    zip_code = serializers.CharField(max_length=9, required=False, allow_blank=True)
+    show_address = serializers.BooleanField(required=False)
+    sale_price = _money(required=False)
+    rent_price = _money(required=False)
+    condo_fee = _money(required=False)
+    iptu = _money(required=False)
+    bedrooms = serializers.IntegerField(min_value=0, max_value=255, required=False)
+    suites = serializers.IntegerField(min_value=0, max_value=255, required=False)
+    bathrooms = serializers.IntegerField(min_value=0, max_value=255, required=False)
+    parking_spaces = serializers.IntegerField(min_value=0, max_value=255, required=False)
+    area_total = serializers.DecimalField(
+        max_digits=10, decimal_places=2, allow_null=True, required=False
+    )
+    area_built = serializers.DecimalField(
+        max_digits=10, decimal_places=2, allow_null=True, required=False
+    )
+    features = serializers.ListField(
+        child=serializers.CharField(max_length=100),
+        required=False,
+        help_text="Nomes das comodidades; as que não existem são criadas.",
+    )
+
+    def validate_external_ref(self, value):
+        return value or None
+
+    def validate(self, attrs):
+        if not self.partial and not (attrs.get("city") and attrs.get("neighborhood")):
+            raise serializers.ValidationError("Informe `city` e `neighborhood`.")
+        return attrs
+
+
+class PropertyWriteResultSerializer(PropertySerializer):
+    created = serializers.BooleanField()
+    possible_duplicates = serializers.ListField(child=serializers.DictField())
+
+    class Meta(PropertySerializer.Meta):
+        fields = [*PropertySerializer.Meta.fields, "created", "possible_duplicates"]
+
+
+class PhotoInSerializer(serializers.Serializer):
+    file = serializers.FileField(required=False, help_text="Imagem (multipart), até 10 MB.")
+    url = serializers.URLField(required=False, help_text="Endereço http(s) público da imagem.")
+    caption = serializers.CharField(max_length=150, required=False, allow_blank=True, default="")
+
+
+class PhotoOutSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    url = serializers.CharField()
+    is_cover = serializers.BooleanField()

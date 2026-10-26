@@ -1,0 +1,31 @@
+<div data-bulk-photos class="pa-drop">
+  {{ input_html }}
+  <p class="pa-drop-hint"><strong>Escolher fotos</strong> ou arraste aqui</p>
+  <p data-bulk-photos-count class="pa-drop-count" role="status" aria-live="polite"></p>
+  <ul data-bulk-photos-list class="pa-drop-list"></ul>
+</div>
+<script>
+(function () {
+  var box = document.currentScript.previousElementSibling;
+  var input = box.querySelector("input[type=file]");
+  var count = box.querySelector("[data-bulk-photos-count]");
+  var list = box.querySelector("[data-bulk-photos-list]");
+  function render() {
+    var files = Array.prototype.slice.call(input.files);
+    count.textContent = files.length ? files.length + (files.length === 1 ? " foto selecionada" : " fotos selecionadas") : "";
+    list.innerHTML = "";
+    files.forEach(function (f) { var li = document.createElement("li"); li.textContent = f.name; list.appendChild(li); });
+  }
+  input.addEventListener("change", render);
+  ["dragover", "dragenter"].forEach(function (ev) {
+    box.addEventListener(ev, function (e) { e.preventDefault(); box.classList.add("is-over"); });
+  });
+  ["dragleave", "drop"].forEach(function (ev) {
+    box.addEventListener(ev, function () { box.classList.remove("is-over"); });
+  });
+  box.addEventListener("drop", function (e) {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; render(); }
+  });
+})();
+</script>

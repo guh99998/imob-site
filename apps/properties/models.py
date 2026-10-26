@@ -62,9 +62,6 @@ class Category(models.Model):
     slug = models.SlugField(
         unique=True, blank=True, help_text=_("Deixe em branco para gerar automaticamente.")
     )
-    order = models.PositiveSmallIntegerField(
-        _("ordem"), default=0, help_text=_("Categorias com número menor aparecem primeiro.")
-    )
     code_prefix = models.CharField(
         _("prefixo do código"),
         max_length=2,
@@ -77,7 +74,7 @@ class Category(models.Model):
     class Meta:
         verbose_name = _("categoria")
         verbose_name_plural = _("categorias")
-        ordering = ["order", "name"]
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -260,13 +257,13 @@ class Property(models.Model):
     )
 
     class Source(models.TextChoices):
-        OWN = "OWN", _("Própria")
-        PARTNER = "PARTNER", _("Parceiro")
-        OWNER = "OWNER", _("Proprietário")
+        OWN = "OWN", _("Captação própria")
+        PARTNER = "PARTNER", _("Indicação de parceiro")
+        OWNER = "OWNER", _("Direto com proprietário")
 
     # Responsáveis e auditoria: só no painel, nunca em páginas públicas.
     source = models.CharField(
-        _("origem"), max_length=7, choices=Source, default=Source.OWN, blank=True
+        _("como o imóvel chegou"), max_length=7, choices=Source, default=Source.OWN, blank=True
     )
     broker = models.ForeignKey(
         "people.Broker",
@@ -274,7 +271,7 @@ class Property(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="properties",
-        verbose_name=_("corretor responsável"),
+        verbose_name=_("corretor captador (responsável)"),
     )
     partner = models.ForeignKey(
         "people.Partner",
@@ -282,7 +279,7 @@ class Property(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="properties",
-        verbose_name=_("parceiro"),
+        verbose_name=_("parceiro que indicou"),
     )
     owner = models.ForeignKey(
         "people.Owner",
@@ -309,6 +306,39 @@ class Property(models.Model):
         on_delete=models.SET_NULL,
         related_name="+",
         verbose_name=_("editado por"),
+    )
+
+    external_ref = models.CharField(
+        _("referência externa"),
+        max_length=100,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+        help_text=_(
+            "Identificador no sistema de origem (API/importação); evita duplicar ao reenviar."
+        ),
+    )
+    review_due = models.DateField(
+        _("revisar até"),
+        null=True,
+        blank=True,
+        help_text=_(
+            "Data para conferir se o anúncio ainda está correto. Definida ao publicar e ao "
+            "marcar como revisado."
+        ),
+    )
+    last_reviewed_at = models.DateTimeField(
+        _("última revisão"), null=True, blank=True, editable=False
+    )
+    last_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=_("revisado por"),
     )
 
     is_featured = models.BooleanField(
@@ -348,6 +378,14 @@ class Property(models.Model):
             self.slug = _unique_slug(Property, f"{self.code}-{self.title}", 220)
         if self.status != self.Status.DRAFT and self.published_at is None:
             self.published_at = timezone.now()
+        if self.status in PUBLIC_STATUSES:
+            from . import reviews
+
+            was_public = (
+                self.pk and Property.objects.filter(pk=self.pk, status__in=PUBLIC_STATUSES).exists()
+            )
+            if not was_public:
+                reviews.schedule(self)
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
@@ -558,3 +596,88 @@ class DuplicateDismissal(models.Model):
 
     def __str__(self):
         return f"{self.property_a_id} x {self.property_b_id}"
+
+
+class PropertyChange(models.Model):
+    """Histórico campo a campo de um imóvel: quem mudou o quê, quando e por onde."""
+
+    property = models.ForeignKey(
+        Property, on_delete=models.CASCADE, related_name="changes", verbose_name=_("imóvel")
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=_("usuário"),
+    )
+    source = models.CharField(_("origem"), max_length=100, default="Painel")
+    created_at = models.DateTimeField(_("quando"), auto_now_add=True)
+    changes = models.JSONField(_("alterações"), default=list)
+
+    class Meta:
+        verbose_name = _("alteração do imóvel")
+        verbose_name_plural = _("alterações do imóvel")
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.property_id} @ {self.created_at:%d/%m/%Y %H:%M}"
+
+
+class ImportJob(models.Model):
+    """Importação em lote de imóveis: enviar -> prévia -> confirmar -> processar em lotes."""
+
+    class Source(models.TextChoices):
+        SHEET = "SHEET", _("Planilha (XLSX/CSV) + ZIP de fotos")
+        XML = "XML", _("XML de portal (VivaReal/ZAP)")
+
+    class Status(models.TextChoices):
+        PREVIEW = "PREVIEW", _("Aguardando confirmação")
+        RUNNING = "RUNNING", _("Importando")
+        DONE = "DONE", _("Concluída")
+
+    source = models.CharField(_("origem"), max_length=5, choices=Source, default=Source.SHEET)
+    file = models.FileField(_("arquivo"), upload_to="imports/%Y/%m/", blank=True)
+    zip_file = models.FileField(
+        _("ZIP de fotos"),
+        upload_to="imports/%Y/%m/",
+        blank=True,
+        help_text=_("Opcional. Uma pasta por referência externa ou os nomes citados na planilha."),
+    )
+    feed_url = models.URLField(
+        _("endereço do XML"),
+        blank=True,
+        help_text=_("Alternativa ao arquivo: URL pública do feed."),
+    )
+    status = models.CharField(_("situação"), max_length=7, choices=Status, default=Status.PREVIEW)
+    rows = models.JSONField(_("linhas"), default=list, editable=False)
+    type_map = models.JSONField(
+        _("tipos do portal"),
+        default=dict,
+        editable=False,
+        help_text=_("Tipo do portal -> categoria."),
+    )
+    total = models.PositiveIntegerField(_("linhas"), default=0)
+    processed = models.PositiveIntegerField(_("processadas"), default=0)
+    created_count = models.PositiveIntegerField(_("criados"), default=0)
+    updated_count = models.PositiveIntegerField(_("atualizados"), default=0)
+    error_count = models.PositiveIntegerField(_("com erro"), default=0)
+    errors = models.JSONField(_("erros"), default=list, editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(_("enviada em"), auto_now_add=True)
+    finished_at = models.DateTimeField(_("concluída em"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("importação de imóveis")
+        verbose_name_plural = _("importações de imóveis")
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"Importação #{self.pk} ({self.created_at:%d/%m/%Y %H:%M})"
+
+    @property
+    def source_label(self):
+        return f"Importação #{self.pk}"

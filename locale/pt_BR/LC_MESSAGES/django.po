@@ -1,0 +1,396 @@
+# Traduções pt-BR de textos do django-unfold que o Django não cobre.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: pt_BR\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "%(full_result_count)s total"
+msgstr "%(full_result_count)s no total"
+
+msgid "(no comment exists)"
+msgstr "(sem comentários)"
+
+msgid "Add new item"
+msgstr "Adicionar novo item"
+
+msgid "Add row"
+msgstr "Adicionar linha"
+
+msgid "All applications"
+msgstr "Todos os aplicativos"
+
+msgid "Apply Filters"
+msgstr "Aplicar filtros"
+
+msgid "Available shortcuts"
+msgstr "Atalhos disponíveis"
+
+msgid "Bold"
+msgstr "Negrito"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Change History"
+msgstr "Histórico de alterações"
+
+msgid "Change reason"
+msgstr "Motivo da alteração"
+
+msgid "Changed by"
+msgstr "Alterado por"
+
+msgid "Changelist shortcuts"
+msgstr "Atalhos da lista"
+
+msgid "Changes"
+msgstr "Alterações"
+
+msgid "Choose a date from the list below to recover a deleted version of an object."
+msgstr "Escolha uma data da lista abaixo para recuperar uma versão excluída do objeto."
+
+msgid "Choose a date from the list below to revert to a previous version of this object"
+msgstr "Escolha uma data da lista abaixo para voltar a uma versão anterior deste objeto"
+
+msgid "Choose a date from the list below to revert to a previous version of this object."
+msgstr "Escolha uma data da lista abaixo para voltar a uma versão anterior deste objeto."
+
+msgid "Choose file to upload"
+msgstr "Escolher arquivo para enviar"
+
+msgid "Click to cancel"
+msgstr "Clique para cancelar"
+
+msgid "Click to download"
+msgstr "Clique para baixar"
+
+msgid "Code"
+msgstr "Código"
+
+msgid "Collapse"
+msgstr "Recolher"
+
+msgid "Command tool shortcuts"
+msgstr "Atalhos da barra de comandos"
+
+msgid "Comment"
+msgstr "Comentário"
+
+msgid "Confirm import"
+msgstr "Confirmar importação"
+
+msgid "Create new record"
+msgstr "Criar novo registro"
+
+msgid "Current file"
+msgstr "Arquivo atual"
+
+msgid "Dark"
+msgstr "Escuro"
+
+msgid "Dataset not found. No action performed."
+msgstr "Conjunto de dados não encontrado. Nenhuma ação executada."
+
+msgid "Date"
+msgstr "Data"
+
+msgid "Date from"
+msgstr "Data inicial"
+
+msgid "Date to"
+msgstr "Data final"
+
+msgid "Default"
+msgstr "Padrão"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Edit comment:"
+msgstr "Editar comentário:"
+
+msgid "Enter an URL"
+msgstr "Informe uma URL"
+
+msgid "Export"
+msgstr "Exportar"
+
+msgid "False"
+msgstr "Falso"
+
+msgid "Field"
+msgstr "Campo"
+
+msgid "Forgotten your password or username?"
+msgstr "Esqueceu sua senha ou usuário?"
+
+msgid "From"
+msgstr "De"
+
+msgid "General"
+msgstr "Geral"
+
+msgid "Global shortcuts"
+msgstr "Atalhos globais"
+
+msgid "Go back"
+msgstr "Voltar"
+
+msgid "Go back to history list"
+msgstr "Voltar ao histórico"
+
+msgid "Group"
+msgstr "Grupo"
+
+msgid "Group permissions"
+msgstr "Permissões do grupo"
+
+msgid "Heading"
+msgstr "Título"
+
+msgid "Image preview"
+msgstr "Pré-visualização da imagem"
+
+msgid "Import"
+msgstr "Importar"
+
+msgid "Indent decrease"
+msgstr "Diminuir recuo"
+
+msgid "Indent increase"
+msgstr "Aumentar recuo"
+
+msgid "Italic"
+msgstr "Itálico"
+
+msgid "Light"
+msgstr "Claro"
+
+msgid "Line number"
+msgstr "Número da linha"
+
+msgid "Link"
+msgstr "Link"
+
+msgid "Manage group"
+msgstr "Gerenciar grupo"
+
+msgid "Manage user"
+msgstr "Gerenciar usuário"
+
+msgid "Navigate"
+msgstr "Navegar"
+
+msgid "New"
+msgstr "Novo"
+
+msgid "New value"
+msgstr "Novo valor"
+
+msgid "Next"
+msgstr "Próximo"
+
+msgid "No data"
+msgstr "Sem dados"
+
+msgid "No results found"
+msgstr "Nenhum resultado encontrado"
+
+msgid "Non field specific"
+msgstr "Não específico de um campo"
+
+msgid "Not enough data."
+msgstr "Dados insuficientes."
+
+msgid "Nothing matched your search"
+msgstr "Nada corresponde à sua busca"
+
+msgid "Object"
+msgstr "Objeto"
+
+msgid "Object permissions"
+msgstr "Permissões do objeto"
+
+msgid "Old value"
+msgstr "Valor anterior"
+
+msgid "Open command tool"
+msgstr "Abrir barra de comandos"
+
+msgid "Open selection"
+msgstr "Abrir seleção"
+
+msgid "Open selection in new tab"
+msgstr "Abrir seleção em nova aba"
+
+msgid "Open shortcuts list"
+msgstr "Abrir lista de atalhos"
+
+msgid "Ordered list"
+msgstr "Lista numerada"
+
+msgid "Paragraph"
+msgstr "Parágrafo"
+
+msgid "Press the save button below to recover this version of the object."
+msgstr "Clique em salvar abaixo para recuperar esta versão do objeto."
+
+msgid "Press the save button below to revert to this version of the object."
+msgstr "Clique em salvar abaixo para voltar a esta versão do objeto."
+
+msgid "Previous"
+msgstr "Anterior"
+
+msgid "Quote"
+msgstr "Citação"
+
+msgid "Recent searches"
+msgstr "Buscas recentes"
+
+msgid "Record picture"
+msgstr "Foto do registro"
+
+msgid "Redo"
+msgstr "Refazer"
+
+msgid "Reset filters"
+msgstr "Limpar filtros"
+
+msgid "Reset to default"
+msgstr "Restaurar padrão"
+
+msgid "Return to site"
+msgstr "Voltar ao site"
+
+msgid "Revert"
+msgstr "Reverter"
+
+msgid "Revert to this version"
+msgstr "Voltar a esta versão"
+
+msgid "Row"
+msgstr "Linha"
+
+msgid "Run the selected action"
+msgstr "Executar a ação selecionada"
+
+msgid "Search apps and models..."
+msgstr "Buscar aplicativos e modelos..."
+
+msgid "Select"
+msgstr "Selecionar"
+
+msgid "Select action"
+msgstr "Selecionar ação"
+
+msgid "Select action to run"
+msgstr "Selecione a ação a executar"
+
+msgid "Select currency"
+msgstr "Selecionar moeda"
+
+msgid "Select format"
+msgstr "Selecionar formato"
+
+msgid "Select record"
+msgstr "Selecionar registro"
+
+msgid "Select value"
+msgstr "Selecione um valor"
+
+msgid "Skipped"
+msgstr "Ignorado"
+
+msgid "Strike"
+msgstr "Tachado"
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "There are no deleted objects to recover"
+msgstr "Não há objetos excluídos para recuperar"
+
+msgid "There are no differences."
+msgstr "Não há diferenças."
+
+msgid "This item will be deleted."
+msgstr "Este item será excluído."
+
+msgid "This object doesn't have a change history."
+msgstr "Este objeto não tem histórico de alterações."
+
+msgid "This object doesn't have a change history. It probably wasn't added via this admin site."
+msgstr "Este objeto não tem histórico de alterações. Provavelmente não foi adicionado por este painel."
+
+msgid "This page yielded into no results."
+msgstr "Esta página não retornou resultados."
+
+msgid "To"
+msgstr "Até"
+
+msgid "Toggle dark/light mode"
+msgstr "Alternar modo escuro/claro"
+
+msgid "Toggle filter"
+msgstr "Mostrar/ocultar filtro"
+
+msgid "Toggle password visibility"
+msgstr "Mostrar/ocultar senha"
+
+msgid "Toggle sidebar"
+msgstr "Mostrar/ocultar menu lateral"
+
+msgid "True"
+msgstr "Verdadeiro"
+
+msgid "Type to search"
+msgstr "Digite para buscar"
+
+msgid "Underlined"
+msgstr "Sublinhado"
+
+msgid "Undo"
+msgstr "Desfazer"
+
+msgid "Unlink"
+msgstr "Remover link"
+
+msgid "Unordered list"
+msgstr "Lista com marcadores"
+
+msgid "Update"
+msgstr "Atualizar"
+
+msgid "User permissions"
+msgstr "Permissões do usuário"
+
+msgid "View traceback"
+msgstr "Ver detalhes do erro"
+
+msgid "Welcome"
+msgstr "Bem-vindo"
+
+msgid "Welcome back to"
+msgstr "Bem-vindo de volta ao"
+
+msgid "You have been successfully logged out from the administration"
+msgstr "Você saiu do painel com sucesso"
+
+msgid "compare"
+msgstr "comparar"
+
+msgid "hide warning"
+msgstr "ocultar aviso"
+
+msgid "impersonate"
+msgstr "entrar como"
+
+msgid "next"
+msgstr "próximo"
+
+msgid "previous"
+msgstr "anterior"
+
+msgid "stop impersonating"
+msgstr "parar de entrar como"

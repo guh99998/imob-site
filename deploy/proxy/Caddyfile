@@ -16,8 +16,8 @@ imobiliaria.desenvolvedorgustavolopes.com.br {
 	}
 }
 
-# MoneyPilot: descomentar na migração (spec do MoneyPilot), depois de apontar o DNS.
-# moneypilot.desenvolvedorgustavolopes.com.br {
-# 	encode zstd gzip
-# 	reverse_proxy moneypilot:8080
-# }
+# MoneyPilot (stack em /opt/moneypilot, alias "moneypilot" na rede "proxy").
+moneypilot.desenvolvedorgustavolopes.com.br {
+	encode zstd gzip
+	reverse_proxy moneypilot:8080
+}

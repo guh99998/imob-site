@@ -1,6 +1,6 @@
 # 028 — Deploy em VPS com Docker Compose
 
-**Status:** Em andamento (no ar em HTTPS na VPS; falta testar restauração de backup e CI/CD)
+**Status:** Concluído (no ar em HTTPS na VPS Hostinger; backup criptografado no R2; imagem do CI/CD no GHCR)
 
 ## Objetivo
 Subir o site em uma VPS: Postgres e app (gunicorn) neste compose; Caddy com HTTPS automático em stack compartilhada (`deploy/proxy/`), para hospedar outros apps na mesma VPS.
@@ -30,7 +30,13 @@ CI/CD, múltiplos servidores, S3 (já suportado por variáveis, só documentado)
 - [x] Healthcheck
 - [x] Deploy real na VPS (Debian, Hostinger) com HTTPS
 - [x] Script de backup; README
-- [ ] Testar restauração do backup; agendar no cron
-- [x] Backup criptografado fora da VPS (rclone + R2), restauração testada
+- [x] Restauração testada; cron às 03:30 (instalar o pacote `cron`: a imagem Debian da VPS não traz)
+- [x] Backup criptografado fora da VPS (rclone + R2), integridade testada a partir do bucket
 - [x] Hardening: unattended-upgrades, fail2ban
-- [ ] CI/CD (GitHub Actions + GHCR): workflow escrito; falta validar a primeira execução na `main` e o `docker compose pull` na VPS
+- [x] CI/CD (GitHub Actions + GHCR); a VPS faz `docker compose pull web`
+
+## Notas de operação
+- Volume `imob_media` nasce com dono root (o Caddy monta primeiro): rodar uma vez `chown -R app:app /app/media` como root no container `web`, senão upload de foto falha com PermissionError.
+- DNS do domínio na Cloudflare deve ficar "DNS only" (sem proxy) para o Let's Encrypt validar.
+- `ALLOWED_HOSTS` em prod inclui `localhost`/`127.0.0.1` por causa do healthcheck.
+- Recriar o remoto `rclone` exige guardar o `rclone.conf` (senha de criptografia) fora da VPS.

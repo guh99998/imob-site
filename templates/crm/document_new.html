@@ -1,11 +1,5 @@
-{% extends 'admin/base.html' %}
+{% extends 'admin/base_site.html' %}
 {% load i18n %}
-
-{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
-
-{% block branding %}
-  {% include "unfold/helpers/site_branding.html" %}
-{% endblock %}
 
 {% block content %}
 <style>

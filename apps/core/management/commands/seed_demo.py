@@ -181,10 +181,7 @@ class Command(BaseCommand):
             site.logo.save("logo-demo.png", ContentFile(LOGO.read_bytes()), save=False)
         site.save()
 
-        categories = {
-            name: Category.objects.get_or_create(name=name, defaults={"order": i})[0]
-            for i, name in enumerate(CATEGORIES, start=1)
-        }
+        categories = {name: Category.objects.get_or_create(name=name)[0] for name in CATEGORIES}
         features = [Feature.objects.get_or_create(name=n)[0] for n in FEATURES]
         neighborhoods = {}
         for (city_name, uf), names in CITIES.items():

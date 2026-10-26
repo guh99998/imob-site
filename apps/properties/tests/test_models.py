@@ -151,7 +151,8 @@ def test_address_hidden_by_default():
 
 def test_default_categories_created_by_data_migration():
     names = list(Category.objects.values_list("name", flat=True))
-    assert names[:5] == ["Apartamento", "Casa", "Cobertura", "Terreno", "Comercial"]
+    assert names[0] == "Apartamento"  # ordem alfabética
+    assert {"Casa", "Cobertura", "Terreno", "Comercial"} <= set(names)
     assert {"Sobrado", "Studio/Kitnet", "Galpão", "Fazenda"} <= set(names)
 
 

@@ -1,16 +1,19 @@
-{% extends 'admin/base.html' %}
+{% extends 'admin/base_site.html' %}
 {% load i18n %}
-
-{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
 {% block breadcrumbs %}{% endblock %}
 
 {% block content %}
+{% include 'admin/crm/client_view_toggle.html' with current='kanban' %}
 <style>
   .kb-board { display: grid; gap: 1rem; grid-auto-flow: column; grid-auto-columns: minmax(16rem, 1fr); overflow-x: auto; padding-bottom: .5rem; }
   .kb-col { background: rgb(0 0 0 / .04); border-radius: 4px; display: flex; flex-direction: column; min-height: 12rem; }
   .kb-col h2 { margin: 0; padding: .75rem 1rem; font-weight: 600; display: flex; justify-content: space-between; }
   .kb-list { padding: .5rem; display: flex; flex-direction: column; gap: .5rem; flex: 1; min-height: 4rem; }
+  @media (max-width: 767px) {
+    .kb-board { grid-auto-columns: 85%; scroll-snap-type: x mandatory; width: 100%; max-width: calc(100vw - 2rem); contain: paint; }
+    .kb-col { scroll-snap-align: start; }
+  }
   .kb-col.is-over { outline: 2px dashed var(--color-primary-600); }
   .kb-card { background: var(--color-white, #fff); border: 1px solid rgb(0 0 0 / .12); border-radius: 4px; padding: .75rem; font-size: .875rem; }
   .kb-card[draggable="true"] { cursor: grab; }
@@ -31,7 +34,6 @@
   </label>
   <noscript><button type="submit">Filtrar</button></noscript>
   {% endif %}
-  <a class="text-sm underline" href="{% url 'admin:crm_client_changelist' %}">Ver em lista</a>
 </form>
 
 <div class="kb-board" id="kb-board" data-csrf="{{ csrf_token }}">
