@@ -1,0 +1,33 @@
+<div data-bulk-photos class="border-2 border-dashed border-base-300 dark:border-base-700 rounded-default p-6 text-center">
+  {{ input_html }}
+  <p class="mt-2 text-sm text-font-subtle-light dark:text-font-subtle-dark">
+    <strong>Escolher fotos</strong> ou arraste aqui
+  </p>
+  <p data-bulk-photos-count class="mt-1 text-sm font-medium" role="status" aria-live="polite"></p>
+  <ul data-bulk-photos-list class="mt-1 text-xs text-left max-h-32 overflow-auto"></ul>
+</div>
+<script>
+(function () {
+  var box = document.currentScript.previousElementSibling;
+  var input = box.querySelector("input[type=file]");
+  var count = box.querySelector("[data-bulk-photos-count]");
+  var list = box.querySelector("[data-bulk-photos-list]");
+  function render() {
+    var files = Array.prototype.slice.call(input.files);
+    count.textContent = files.length ? files.length + (files.length === 1 ? " foto selecionada" : " fotos selecionadas") : "";
+    list.innerHTML = "";
+    files.forEach(function (f) { var li = document.createElement("li"); li.textContent = f.name; list.appendChild(li); });
+  }
+  input.addEventListener("change", render);
+  ["dragover", "dragenter"].forEach(function (ev) {
+    box.addEventListener(ev, function (e) { e.preventDefault(); box.classList.add("bg-base-100"); });
+  });
+  ["dragleave", "drop"].forEach(function (ev) {
+    box.addEventListener(ev, function () { box.classList.remove("bg-base-100"); });
+  });
+  box.addEventListener("drop", function (e) {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; render(); }
+  });
+})();
+</script>

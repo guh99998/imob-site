@@ -137,6 +137,7 @@ class ClientAdmin(
         "updated_at",
     )
     list_filter = ("stage", "broker", "source", "purpose", "created_at")
+    list_before_template = "admin/crm/client_view_toggle.html"
     list_select_related = ("broker",)
     search_fields = ("name", "whatsapp", "email", "tags", "notes")
     search_help_text = _("Buscar por nome, WhatsApp, email ou etiqueta")

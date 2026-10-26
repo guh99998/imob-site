@@ -1,8 +1,0 @@
-{% if client_message %}
-<div class="mt-6 p-4 border border-base-200 rounded-default bg-white">
-  <h3 class="font-semibold mb-2">Mensagem para o cliente</h3>
-  <textarea id="client-message" readonly rows="3" class="w-full border border-base-200 rounded-default p-2 text-sm">{{ client_message }}</textarea>
-  <button type="button" class="mt-2 px-3 py-1.5 rounded-default bg-primary-600 text-white text-sm"
-          onclick="var t=document.getElementById('client-message');t.select();navigator.clipboard&&navigator.clipboard.writeText(t.value);this.textContent='Copiado!'">Copiar mensagem</button>
-</div>
-{% endif %}

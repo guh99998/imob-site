@@ -6,12 +6,12 @@ Site de imobiliária (venda e aluguel) com painel de gestão. Django 6.1, Python
 - **Site público:** home com busca completa, lista com filtros e paginação, detalhe do imóvel (galeria, ficha, comodidades), SEO (sitemap, JSON-LD, Open Graph).
 - **Contato:** WhatsApp com mensagem pronta por imóvel (texto editável no painel), botão "Copiar link do imóvel", formulários de interesse, "Procuro um imóvel", "Anuncie seu imóvel" e Contato.
 - **Favoritos:** coração nos cards e no detalhe, página `/favoritos/` e contador no header, sem login (cookie `favs`, funciona sem JS). O painel mostra quantas vezes cada imóvel foi favoritado.
-- **Mais procurados:** a home mostra as buscas mais feitas nos últimos 30 dias (sem dado pessoal, sem robôs); o painel lista a demanda em "Contatos → Buscas no site".
+- **Mais procurados:** a home mostra as buscas mais feitas nos últimos 30 dias (sem dado pessoal, sem robôs); a tabela `SearchQuery` só alimenta a home (sem tela no painel).
 - **CRM de clientes:** tudo o que entra pelo site (mensagem de imóvel, contato, anúncio, "Procuro um imóvel") vira um cliente sem duplicar (casa por WhatsApp ou email), com histórico, corretor responsável, etapa do funil, retornos agendados (no dashboard e na sidebar) e anonimização (LGPD). O Corretor vê só os próprios clientes.
 - **API aberta (opcional):** `/api/v1/` com chave (`Authorization: Api-Key …`) criada no painel: enviar contatos (sem duplicar cliente), ler/atualizar clientes e histórico, ler imóveis publicados. Documentação em `/api/docs/`. Desligada por padrão: ligue com `FEATURES=…,api`.
 - **Documentos:** termo de visita, proposta, contratos e recibo gerados a partir de modelos editáveis no painel (com valor por extenso), em página A4 para imprimir ou salvar em PDF, com histórico de quem gerou o quê. Modelos-base de exemplo: `manage.py seed_document_templates`.
 - **Duplicados:** ao salvar um imóvel o painel avisa se ele repete outro (mesmo CEP, número e complemento, ou características parecidas); coluna e filtro na lista, ação "Marcar como não duplicado" e comando `find_duplicates` para varrer o estoque.
-- **Painel (`/admin/`):** imóveis com código automático por categoria, fotos em lote, máscaras, pesquisa avançada, mensagem pronta para o cliente, leads e procuras, corretores/parceiros/proprietários com funções e auditoria.
+- **Painel (`/admin/`):** imóveis com código automático por categoria, fotos em lote (arrastar e soltar), comodidades em checkboxes, placeholders, máscaras, pesquisa avançada, leads e procuras (lista com resumo, WhatsApp clicável e imóveis compatíveis), tudo em ordem alfabética e em pt-BR (`locale/pt_BR`, com os textos do Unfold), corretores/parceiros/proprietários com funções e auditoria.
 - **Módulos opcionais por site:** variável `FEATURES` (`brokers`, `partners`, `owners`, `searches`, `crm`, `api`; a `api` vem desligada).
 
 ## Como rodar (desenvolvimento)
@@ -78,5 +78,8 @@ Plano em `plans/plano-016-022-novas-funcoes.md`:
 - [x] 024 — Histórico do cliente em linha do tempo com "Registrar interação"
 - [x] 025 — Kanban de clientes (arrastar e soltar, últimos 30 dias em Fechado/Perdido)
 - [x] 026 — Qualificação das partes (cliente, proprietário, fiador), cônjuge e avisos nos contratos
+- [x] 029 — Polimento do admin (pt-BR, menu ativo, kanban com cabeçalho, cadastro guiado, ordem alfabética, `DEMO_MODE`)
+
+Plano em `plans/2026-10-26-correcoes-admin.md` (próximos: 030 duplicado avisado no cadastro, 031 histórico do imóvel + revisão, 032 API de escrita, 033 importação em lote).
 
 Plano em `plans/plano-023-027-ajustes-kanban-contratos.md` (024 histórico, 025 Kanban, 026 partes do contrato).

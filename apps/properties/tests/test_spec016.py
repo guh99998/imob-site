@@ -44,10 +44,3 @@ def test_developer_credit_in_footer(client):
 @override_settings(DEVELOPER_CREDIT=None)
 def test_developer_credit_can_be_disabled(client):
     assert "Desenvolvido por" not in client.get(reverse("core:home")).content.decode()
-
-
-def test_admin_change_page_shows_client_message(admin_client):
-    prop = PropertyFactory()
-    r = admin_client.get(reverse("admin:properties_property_change", args=[prop.pk]))
-    assert r.status_code == 200
-    assert "Mensagem para o cliente" in r.content.decode()

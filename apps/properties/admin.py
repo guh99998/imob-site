@@ -3,12 +3,14 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.db.models import Count, Max
 from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
+from unfold.widgets import UnfoldAdminCheckboxSelectMultipleWidget
 
 from apps.core.admin_filters import AdvancedSearchMixin, dropdown_filter
 from apps.core.admin_masks import MaskedAdminMixin
@@ -25,7 +27,6 @@ from .models import (
     Neighborhood,
     Property,
     PropertyPhoto,
-    SearchQuery,
 )
 
 STATUS_LABELS = {
@@ -45,9 +46,7 @@ def format_brl(value):
 class CategoryAdmin(ModelAdmin):
     list_display = ("name", "code_prefix", "properties_count")
     search_fields = ("name",)
-    fields = ("name", "code_prefix", "order")
-    ordering_field = "order"
-    hide_ordering_field = True
+    fields = ("name", "code_prefix")
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(_count=Count("properties"))
@@ -98,6 +97,12 @@ class FeatureAdmin(ModelAdmin):
 
 class MultipleImageInput(forms.ClearableFileInput):
     allow_multiple_selected = True
+    frame_template = "admin/properties/widgets/bulk_photos.html"
+
+    def render(self, name, value, attrs=None, renderer=None):
+        # O renderer de formulários só enxerga templates dos apps; a moldura fica em templates/.
+        input_html = super().render(name, value, attrs, renderer)
+        return render_to_string(self.frame_template, {"input_html": input_html})
 
 
 class MultipleImageField(forms.ImageField):
@@ -124,9 +129,30 @@ class PropertyAdminForm(forms.ModelForm):
         ),
     )
 
+    PLACEHOLDERS = {
+        "title": _("Ex.: Casa 3 quartos com piscina no Jardim América"),
+        "zip_code": "00000-000",
+        "number": _("Ex.: 120"),
+        "complement": _("Ex.: Apto 42, bloco B"),
+        "sale_price": _("R$ 0,00"),
+        "rent_price": _("R$ 0,00"),
+        "condo_fee": _("R$ 0,00"),
+        "iptu": _("R$ 0,00"),
+        "area_total": _("m²"),
+        "area_built": _("m²"),
+    }
+
     class Meta:
         model = Property
         fields = "__all__"  # noqa: DJ007 - o admin limita aos campos dos fieldsets
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "category" in self.fields:
+            self.fields["category"].empty_label = _("Selecione a categoria")
+        for name, text in self.PLACEHOLDERS.items():
+            if name in self.fields:
+                self.fields[name].widget.attrs.setdefault("placeholder", str(text))
 
 
 class PropertyPhotoInline(TabularInline):
@@ -177,14 +203,12 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     search_fields = ("code", "title", "street", "neighborhood__name")
     search_help_text = _("Buscar por código, título, rua ou bairro")
     autocomplete_fields = ("neighborhood",)
-    filter_horizontal = ("features",)
     form = PropertyAdminForm
     inlines = [PropertyPhotoInline]
     actions = ["publish", "mark_sold", "mark_rented", "feature", "dismiss_duplicates"]
     actions_row = ["view_on_site_action", "generate_document_row"]
     actions_detail = ["generate_document_detail"]
     warn_unsaved_form = True
-    change_form_after_template = "admin/properties/client_message.html"
     fieldsets = (
         (
             _("Informações"),
@@ -399,14 +423,11 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("photos")
 
-    def render_change_form(self, request, context, add=False, change=False, form_url="", obj=None):
-        if obj is not None and obj.pk:
-            context["client_message"] = (
-                obj.whatsapp_text(request)
-                if obj.status in PUBLIC_STATUSES
-                else f"{obj.code} – {obj.title}"
-            )
-        return super().render_change_form(request, context, add, change, form_url, obj)
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "features":
+            kwargs["widget"] = UnfoldAdminCheckboxSelectMultipleWidget
+            kwargs["queryset"] = Feature.objects.order_by("name")
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def has_generate_document_permission(self, request, object_id=None):
         return crm_documents.can_generate(request)
@@ -475,20 +496,3 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
             )
             return
         queryset.update(is_featured=True)
-
-
-@admin.register(SearchQuery)
-class SearchQueryAdmin(ModelAdmin):
-    """Só leitura: o que os visitantes mais procuram no site (dado de demanda)."""
-
-    list_display = ("label", "count", "results", "last_searched_at")
-    search_fields = ("label",)
-    search_help_text = _("Buscar pelo texto da busca")
-    ordering = ("-count", "-last_searched_at")
-    list_per_page = 50
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False

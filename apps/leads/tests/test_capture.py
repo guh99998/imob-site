@@ -1,4 +1,5 @@
 from decimal import Decimal
+from urllib.parse import urlencode
 
 import pytest
 from django.core import mail
@@ -132,10 +133,11 @@ def test_matching_properties_link_filters_admin_list(admin_client):
         min_parking=1,
     )
     search.categories.add(house)
-    url = reverse("admin:leads_propertysearch_matching_row", args=[search.pk])
+    assert search.matching_count() == 1
+    listing = admin_client.get(reverse("admin:leads_propertysearch_changelist")).content.decode()
+    assert "Ver 1 imóvel compatível" in listing
+    url = reverse("admin:properties_property_changelist") + "?" + urlencode(search.matching_query())
     r = admin_client.get(url)
-    assert r.status_code == 302
-    r = admin_client.get(r.url)
     assert r.status_code == 200
     assert [p.pk for p in r.context["cl"].result_list] == [match.pk]
 

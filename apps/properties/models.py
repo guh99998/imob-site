@@ -62,9 +62,6 @@ class Category(models.Model):
     slug = models.SlugField(
         unique=True, blank=True, help_text=_("Deixe em branco para gerar automaticamente.")
     )
-    order = models.PositiveSmallIntegerField(
-        _("ordem"), default=0, help_text=_("Categorias com número menor aparecem primeiro.")
-    )
     code_prefix = models.CharField(
         _("prefixo do código"),
         max_length=2,
@@ -77,7 +74,7 @@ class Category(models.Model):
     class Meta:
         verbose_name = _("categoria")
         verbose_name_plural = _("categorias")
-        ordering = ["order", "name"]
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -260,13 +257,13 @@ class Property(models.Model):
     )
 
     class Source(models.TextChoices):
-        OWN = "OWN", _("Própria")
-        PARTNER = "PARTNER", _("Parceiro")
-        OWNER = "OWNER", _("Proprietário")
+        OWN = "OWN", _("Captação própria")
+        PARTNER = "PARTNER", _("Indicação de parceiro")
+        OWNER = "OWNER", _("Direto com proprietário")
 
     # Responsáveis e auditoria: só no painel, nunca em páginas públicas.
     source = models.CharField(
-        _("origem"), max_length=7, choices=Source, default=Source.OWN, blank=True
+        _("como o imóvel chegou"), max_length=7, choices=Source, default=Source.OWN, blank=True
     )
     broker = models.ForeignKey(
         "people.Broker",
@@ -274,7 +271,7 @@ class Property(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="properties",
-        verbose_name=_("corretor responsável"),
+        verbose_name=_("corretor captador (responsável)"),
     )
     partner = models.ForeignKey(
         "people.Partner",
@@ -282,7 +279,7 @@ class Property(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="properties",
-        verbose_name=_("parceiro"),
+        verbose_name=_("parceiro que indicou"),
     )
     owner = models.ForeignKey(
         "people.Owner",

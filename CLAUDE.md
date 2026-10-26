@@ -41,4 +41,6 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - CRUD é feito no Django Admin (django-unfold; sidebar em `UNFOLD["SIDEBAR"]`) — evoluir o admin antes de criar telas próprias.
 - Testes para models, filtros e views em `apps/<app>/tests/`, usando factory-boy.
 - Ícones: Bootstrap Icons, só os necessários, como SVG inline em `templates/partials/icons/` (sem importar a biblioteca).
+- Traduções: `LOCALE_PATHS = locale/`; `locale/pt_BR/LC_MESSAGES/django.po` traz os textos do Unfold que o Django não cobre; `.mo` é commitado (sem `msgfmt` local, gere com um script Python) e o Dockerfile roda `compilemessages`. Texto novo do Unfold em inglês = nova entrada no `.po` + recompilar.
+- Menu do Unfold: link callable não marca "ativo"; use `"active": "apps.core.admin_navigation.<x>"` com `path_active(...)`. Faixa de demonstração do site: `DEMO_MODE` no `.env`. Categorias e demais cadastros em ordem alfabética (`Meta.ordering`); sem campo de ordem manual (só fotos têm).
 - Não commitar `.env`, `db.sqlite3`, `media/`.

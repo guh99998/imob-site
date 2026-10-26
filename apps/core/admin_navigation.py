@@ -19,7 +19,6 @@ can_view_feature = _perm("properties.view_feature")
 can_view_city = _perm("properties.view_city")
 can_view_neighborhood = _perm("properties.view_neighborhood")
 can_view_lead = _perm("leads.view_lead")
-can_view_searchquery = _perm("properties.view_searchquery")
 can_view_settings = _perm("core.view_sitesettings")
 
 
@@ -65,6 +64,23 @@ def all_properties_active(request):
 
 def add_property_active(request):
     return request.path == reverse("admin:properties_property_add")
+
+
+def path_active(name, exclude=()):
+    """Ativo quando o caminho começa com a URL `name` e não com as de `exclude`."""
+
+    def check(request):
+        if any(request.path.startswith(reverse(other)) for other in exclude):
+            return False
+        return request.path.startswith(reverse(name))
+
+    return check
+
+
+clients_active = path_active("admin:crm_client_changelist", exclude=["admin:crm_client_kanban"])
+kanban_active = path_active("admin:crm_client_kanban")
+followups_active = path_active("admin:crm_followup_changelist")
+site_settings_active = path_active("admin:core_sitesettings_changelist")
 
 
 def site_settings_link(request):

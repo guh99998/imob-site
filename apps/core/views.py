@@ -27,7 +27,7 @@ def home(request):
     categories = list(
         Category.objects.annotate(total=Count("properties", filter=PUBLIC))
         .filter(total__gt=0)
-        .order_by("order", "name")
+        .order_by("name")
     )
     for cat in categories:
         cat.sample = qs.filter(category=cat).first()

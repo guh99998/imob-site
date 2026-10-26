@@ -48,6 +48,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
     change_password_form = AdminPasswordChangeForm
     list_display = ("username", "first_name", "last_name", "email", "role_label", "is_active")
     list_filter = ("is_active", "groups")
+    ordering = ("first_name", "last_name", "username")
     add_fieldsets = (
         *BaseUserAdmin.add_fieldsets,
         (_("Acesso"), {"fields": ("first_name", "last_name", "email", "role")}),

@@ -60,6 +60,7 @@ def site_settings(request):
         "favorites_total": len(favorite_codes),
         "site": SiteSettings.load(),
         "features": {"searches": enabled("searches")},
+        "demo_mode": settings.DEMO_MODE,
         "developer_credit": settings.DEVELOPER_CREDIT,
         "nav_items": _nav_items(),
         **_footer_links(),

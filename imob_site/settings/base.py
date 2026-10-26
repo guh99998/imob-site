@@ -80,6 +80,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "pt-br"
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
@@ -126,6 +127,9 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v1",
 }
+
+# Faixa "site de demonstração" no topo do site público.
+DEMO_MODE = env.bool("DEMO_MODE", default=False)
 
 # Crédito no rodapé do site (None desliga).
 DEVELOPER_CREDIT = {
@@ -243,18 +247,21 @@ UNFOLD = {
                         "title": _("Clientes"),
                         "icon": "contacts",
                         "link": reverse_lazy("admin:crm_client_changelist"),
+                        "active": "apps.core.admin_navigation.clients_active",
                         "permission": "apps.core.admin_navigation.can_view_client",
                     },
                     {
                         "title": _("Funil (Kanban)"),
                         "icon": "view_kanban",
                         "link": reverse_lazy("admin:crm_client_kanban"),
+                        "active": "apps.core.admin_navigation.kanban_active",
                         "permission": "apps.core.admin_navigation.can_view_client",
                     },
                     {
                         "title": _("Retornos"),
                         "icon": "event_upcoming",
                         "link": followups_link,
+                        "active": "apps.core.admin_navigation.followups_active",
                         "badge": "apps.core.admin_navigation.overdue_followups_badge",
                         "permission": "apps.core.admin_navigation.can_view_followup",
                     },
@@ -320,12 +327,6 @@ UNFOLD = {
                         "badge": "apps.core.admin_navigation.new_searches_badge",
                         "permission": "apps.core.admin_navigation.can_view_search",
                     },
-                    {
-                        "title": _("Buscas no site"),
-                        "icon": "trending_up",
-                        "link": reverse_lazy("admin:properties_searchquery_changelist"),
-                        "permission": "apps.core.admin_navigation.can_view_searchquery",
-                    },
                 ],
             },
             {
@@ -336,6 +337,7 @@ UNFOLD = {
                         "title": _("Dados da imobiliária"),
                         "icon": "storefront",
                         "link": site_settings_link,
+                        "active": "apps.core.admin_navigation.site_settings_active",
                         "permission": "apps.core.admin_navigation.can_view_settings",
                     },
                     {

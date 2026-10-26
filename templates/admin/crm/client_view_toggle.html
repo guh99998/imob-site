@@ -1,0 +1,6 @@
+{% url 'admin:crm_client_changelist' as list_url %}
+{% url 'admin:crm_client_kanban' as kanban_url %}
+<nav class="flex gap-2 mb-4 text-sm" aria-label="Modo de visualização">
+  <a href="{{ list_url }}" class="px-3 py-1.5 rounded-default border {% if current == 'kanban' %}border-base-200 dark:border-base-700{% else %}bg-primary-600 text-white border-primary-600{% endif %}" {% if current != 'kanban' %}aria-current="page"{% endif %}>Ver em lista</a>
+  <a href="{{ kanban_url }}" class="px-3 py-1.5 rounded-default border {% if current == 'kanban' %}bg-primary-600 text-white border-primary-600{% else %}border-base-200 dark:border-base-700{% endif %}" {% if current == 'kanban' %}aria-current="page"{% endif %}>Ver em kanban</a>
+</nav>
