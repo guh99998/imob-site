@@ -4,7 +4,11 @@ import environ
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.admin_navigation import followups_link, site_settings_link
+from apps.core.admin_navigation import (
+    followups_link,
+    pending_reviews_link,
+    site_settings_link,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -198,6 +202,14 @@ UNFOLD = {
                         "icon": "home_work",
                         "link": reverse_lazy("admin:properties_property_changelist"),
                         "active": "apps.core.admin_navigation.all_properties_active",
+                        "permission": "apps.core.admin_navigation.can_view_property",
+                    },
+                    {
+                        "title": _("Revisões pendentes"),
+                        "icon": "event_repeat",
+                        "link": pending_reviews_link,
+                        "active": "apps.core.admin_navigation.pending_reviews_active",
+                        "badge": "apps.core.admin_navigation.pending_reviews_badge",
                         "permission": "apps.core.admin_navigation.can_view_property",
                     },
                     {

@@ -59,7 +59,11 @@ def _is_property_list(request):
 
 def all_properties_active(request):
     """ "Todos os imóveis" fica ativo na lista e na edição, mas não em /add/."""
-    return _is_property_list(request) and not request.path.endswith("/add/")
+    return (
+        _is_property_list(request)
+        and not request.path.endswith("/add/")
+        and request.GET.get("review") != "overdue"
+    )
 
 
 def add_property_active(request):
@@ -88,6 +92,26 @@ def site_settings_link(request):
     from .models import SiteSettings
 
     return reverse("admin:core_sitesettings_change", args=[SiteSettings.load().pk])
+
+
+def pending_reviews_badge(request):
+    from apps.people.scoping import is_scoped, own_properties_q
+    from apps.properties import reviews
+
+    if not can_view_property(request):
+        return None
+    qs = reviews.pending()
+    if is_scoped(request.user):
+        qs = qs.filter(own_properties_q(request.user)).distinct()
+    return qs.count() or None
+
+
+def pending_reviews_link(request):
+    return reverse("admin:properties_property_changelist") + "?review=overdue"
+
+
+def pending_reviews_active(request):
+    return _is_property_list(request) and request.GET.get("review") == "overdue"
 
 
 def new_leads_badge(request):

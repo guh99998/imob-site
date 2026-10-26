@@ -1,0 +1,20 @@
+{% if history_entries %}
+<section class="mt-8" aria-labelledby="property-history-title">
+  <h2 id="property-history-title" class="text-lg font-semibold mb-3">Histórico de alterações</h2>
+  <ul class="grid gap-3">
+    {% for entry in history_entries %}
+    <li class="rounded-default border border-base-200 dark:border-base-700 p-3 text-sm">
+      <p class="font-medium">
+        {{ entry.created_at|date:"d/m/Y H:i" }} · {% firstof entry.user.get_full_name entry.user "Sistema" %}
+        <span class="text-xs font-normal opacity-70">({{ entry.source }})</span>
+      </p>
+      <ul class="mt-1 list-disc pl-5">
+        {% for c in entry.changes %}
+        <li><strong>{{ c.label }}:</strong> {{ c.old }} → {{ c.new }}</li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

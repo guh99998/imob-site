@@ -43,6 +43,12 @@ class SiteSettings(models.Model):
         ),
     )
 
+    review_interval_days = models.PositiveSmallIntegerField(
+        _("revisar anúncios a cada (dias)"),
+        default=60,
+        help_text=_("Prazo para conferir cada imóvel publicado. 0 desliga as revisões."),
+    )
+
     class Meta:
         verbose_name = _("configurações do site")
         verbose_name_plural = _("configurações do site")

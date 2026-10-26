@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 
 from django import forms
 from django.conf import settings
@@ -14,6 +15,7 @@ from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
+from unfold.contrib.filters.admin import DropdownFilter
 from unfold.decorators import action, display
 from unfold.widgets import UnfoldAdminCheckboxSelectMultipleWidget
 
@@ -23,7 +25,7 @@ from apps.core.features import enabled
 from apps.crm import documents as crm_documents
 from apps.people.scoping import ScopedByRoleMixin, is_scoped
 
-from . import duplicates
+from . import duplicates, history, reviews
 from .models import (
     PUBLIC_STATUSES,
     Category,
@@ -34,6 +36,8 @@ from .models import (
     PropertyPhoto,
 )
 
+REVIEW_LABELS = {"overdue": "danger", "soon": "warning", "ok": "success"}
+
 STATUS_LABELS = {
     Property.Status.DRAFT: "warning",
     Property.Status.PUBLISHED: "success",
@@ -43,8 +47,7 @@ STATUS_LABELS = {
 }
 
 
-def format_brl(value):
-    return "R$ " + f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+format_brl = history.format_brl
 
 
 @admin.register(Category)
@@ -225,6 +228,32 @@ class PropertyPhotoInline(TabularInline):
         return "-"
 
 
+class ReviewFilter(DropdownFilter):
+    title = _("revisão")
+    parameter_name = "review"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("overdue", _("Vencida")),
+            ("soon", _("Vence em 7 dias")),
+            ("ok", _("Em dia")),
+        ]
+
+    def queryset(self, request, queryset):
+        public = queryset.filter(status__in=PUBLIC_STATUSES)
+        today = timezone.localdate()
+        value = self.value()
+        if value == "overdue":
+            return reviews.pending(queryset)
+        if value == "soon":
+            return public.filter(
+                review_due__gt=today, review_due__lte=today + timedelta(days=reviews.SOON_DAYS)
+            )
+        if value == "ok":
+            return public.filter(review_due__gt=today + timedelta(days=reviews.SOON_DAYS))
+        return queryset
+
+
 @admin.register(Property)
 class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, ModelAdmin):
     masks = {
@@ -236,7 +265,13 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         "area_built": "area",
         "zip_code": "cep",
     }
-    readonly_fields = ("code_display", "audit_created", "audit_updated", "favorites_count")
+    readonly_fields = (
+        "code_display",
+        "audit_created",
+        "audit_updated",
+        "audit_reviewed",
+        "favorites_count",
+    )
     list_display = (
         "cover_preview",
         "code",
@@ -244,12 +279,20 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         "category",
         "price",
         "status_badge",
+        "review_badge",
         "duplicate_badge",
         "favorites_count",
         "is_featured",
     )
     list_display_links = ("code", "title")
-    list_filter = ("status", "purpose", "category", "neighborhood__city", "duplicate_hint")
+    list_filter = (
+        "status",
+        "purpose",
+        "category",
+        "neighborhood__city",
+        "duplicate_hint",
+        ReviewFilter,
+    )
     list_editable = ("is_featured",)
     list_select_related = ("category", "neighborhood__city")
     search_fields = ("code", "title", "street", "neighborhood__name")
@@ -257,13 +300,21 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     autocomplete_fields = ("neighborhood",)
     form = PropertyAdminForm
     change_form_before_template = "admin/properties/duplicates_slot.html"
+    change_form_after_template = "admin/properties/history.html"
     inlines = [PropertyPhotoInline]
 
     class Media:
         js = ("properties/admin/duplicates.js",)
 
-    actions = ["publish", "mark_sold", "mark_rented", "feature", "dismiss_duplicates"]
-    actions_row = ["view_on_site_action", "generate_document_row"]
+    actions = [
+        "publish",
+        "mark_sold",
+        "mark_rented",
+        "feature",
+        "mark_reviewed",
+        "dismiss_duplicates",
+    ]
+    actions_row = ["view_on_site_action", "mark_reviewed_row", "generate_document_row"]
     actions_detail = ["generate_document_detail"]
     warn_unsaved_form = True
     fieldsets = (
@@ -278,6 +329,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
                     "purpose",
                     "status",
                     "is_featured",
+                    "review_due",
                     "description",
                     "not_duplicate",
                 ),
@@ -335,7 +387,12 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
                     _("Registro"),
                     {
                         "classes": ["tab"],
-                        "fields": ("audit_created", "audit_updated", "favorites_count"),
+                        "fields": (
+                            "audit_created",
+                            "audit_updated",
+                            "audit_reviewed",
+                            "favorites_count",
+                        ),
                     },
                 )
             )
@@ -362,6 +419,13 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
 
             kwargs["queryset"] = Broker.objects.filter(is_active=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        prop = self.get_queryset(request).filter(pk=object_id).first()
+        if prop is not None:
+            extra_context["history_entries"] = list(prop.changes.select_related("user")[:50])
+        return super().change_view(request, object_id, form_url, extra_context)
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -398,12 +462,21 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
 
     def save_model(self, request, obj, form, change):
         adding = not obj.pk
+        before = None if adding else history.snapshot(Property.objects.get(pk=obj.pk))
         if adding:
             obj.created_by = request.user
         obj.updated_by = request.user
         if is_scoped(request.user) and not obj.broker_id:
             obj.broker = getattr(request.user, "broker", None)
         super().save_model(request, obj, form, change)
+        if form is not None:
+            form._history_before, form._history_row = before, None
+            if adding:
+                form._history_row = history.record_created(obj, request.user)
+            elif before is not None:
+                form._history_row = history.record_changes(
+                    obj, before, history.snapshot(obj), request.user
+                )
         ids = form.confirmed_ids() if adding and not is_scoped(request.user) else None
         if ids is not None:
             others = ids or {m.pk for m, _level in duplicates.find_duplicates(obj)}
@@ -442,6 +515,18 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
 
     def save_related(self, request, form, formsets, change):
         super().save_related(request, form, formsets, change)
+        self._add_photos(request, form)
+        before = getattr(form, "_history_before", None)
+        if before is not None:  # comodidades e fotos só mudam depois do save_model
+            form._history_row = history.append_changes(
+                getattr(form, "_history_row", None),
+                form.instance,
+                before,
+                history.snapshot(form.instance),
+                request.user,
+            )
+
+    def _add_photos(self, request, form):
         files = form.cleaned_data.get("bulk_photos") or []
         if not files:
             return
@@ -465,6 +550,25 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         return (
             f"{obj.created_by.get_full_name() or obj.created_by} em {obj.created_at:%d/%m/%Y %H:%M}"
         )
+
+    @display(description=_("última revisão"))
+    def audit_reviewed(self, obj):
+        if not obj or not obj.last_reviewed_at:
+            return "-"
+        who = obj.last_reviewed_by
+        name = (who.get_full_name() or who) if who else "-"
+        return f"{name} em {timezone.localtime(obj.last_reviewed_at):%d/%m/%Y %H:%M}"
+
+    @display(description=_("revisão"), ordering="review_due", label=REVIEW_LABELS)
+    def review_badge(self, obj):
+        if obj.status not in PUBLIC_STATUSES or not obj.review_due:
+            return "-"
+        today = timezone.localdate()
+        if obj.review_due <= today:
+            return "overdue", _("Vencida (%s)") % f"{obj.review_due:%d/%m}"
+        if obj.review_due <= today + timedelta(days=reviews.SOON_DAYS):
+            return "soon", _("Até %s") % f"{obj.review_due:%d/%m}"
+        return "ok", f"{obj.review_due:%d/%m/%Y}"
 
     @display(description=_("última edição"))
     def audit_updated(self, obj):
@@ -554,19 +658,55 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
             return redirect(reverse("admin:properties_property_change", args=[prop.pk]))
         return redirect(prop.get_absolute_url())
 
+    def _apply(self, request, queryset, mutate):
+        """Aplica `mutate` a cada imóvel pelo save() (prazos e histórico); devolve o total."""
+        total = 0
+        for prop in queryset:
+            before = history.snapshot(prop)
+            mutate(prop)
+            prop.updated_by = request.user
+            prop.save()
+            history.record_changes(
+                prop, before, history.snapshot(prop), request.user, source="Ação em lote"
+            )
+            total += 1
+        return total
+
     @admin.action(description=_("Publicar selecionados"))
     def publish(self, request, queryset):
-        queryset.filter(published_at__isnull=True).update(published_at=timezone.now())
-        n = queryset.update(status=Property.Status.PUBLISHED)
+        n = self._apply(
+            request, queryset, lambda p: setattr(p, "status", Property.Status.PUBLISHED)
+        )
         self.message_user(request, _("%d imóvel(is) publicado(s).") % n, messages.SUCCESS)
 
     @admin.action(description=_("Marcar como vendido"))
     def mark_sold(self, request, queryset):
-        queryset.update(status=Property.Status.SOLD)
+        self._apply(request, queryset, lambda p: setattr(p, "status", Property.Status.SOLD))
 
     @admin.action(description=_("Marcar como alugado"))
     def mark_rented(self, request, queryset):
-        queryset.update(status=Property.Status.RENTED)
+        self._apply(request, queryset, lambda p: setattr(p, "status", Property.Status.RENTED))
+
+    @admin.action(description=_("Marcar como revisado"), permissions=["change"])
+    def mark_reviewed(self, request, queryset):
+        n = self._apply(request, queryset, lambda p: reviews.mark_reviewed(p, request.user))
+        self.message_user(
+            request, _("%d imóvel(is) marcado(s) como revisado(s).") % n, messages.SUCCESS
+        )
+
+    @action(
+        description=_("Marcar como revisado"),
+        url_path="marcar-revisado",
+        permissions=["change"],
+    )
+    def mark_reviewed_row(self, request, object_id):
+        self._apply(
+            request,
+            self.get_queryset(request).filter(pk=object_id),
+            lambda p: reviews.mark_reviewed(p, request.user),
+        )
+        messages.success(request, _("Imóvel marcado como revisado."))
+        return redirect(reverse("admin:properties_property_changelist"))
 
     @admin.action(description=_("Marcar como não duplicado"), permissions=["change"])
     def dismiss_duplicates(self, request, queryset):
@@ -591,4 +731,4 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
                 messages.ERROR,
             )
             return
-        queryset.update(is_featured=True)
+        self._apply(request, queryset, lambda p: setattr(p, "is_featured", True))

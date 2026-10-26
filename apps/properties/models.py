@@ -308,6 +308,28 @@ class Property(models.Model):
         verbose_name=_("editado por"),
     )
 
+    review_due = models.DateField(
+        _("revisar até"),
+        null=True,
+        blank=True,
+        help_text=_(
+            "Data para conferir se o anúncio ainda está correto. Definida ao publicar e ao "
+            "marcar como revisado."
+        ),
+    )
+    last_reviewed_at = models.DateTimeField(
+        _("última revisão"), null=True, blank=True, editable=False
+    )
+    last_reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        editable=False,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=_("revisado por"),
+    )
+
     is_featured = models.BooleanField(
         _("destaque"), default=False, help_text=_("Imóveis em destaque aparecem na página inicial.")
     )
@@ -345,6 +367,14 @@ class Property(models.Model):
             self.slug = _unique_slug(Property, f"{self.code}-{self.title}", 220)
         if self.status != self.Status.DRAFT and self.published_at is None:
             self.published_at = timezone.now()
+        if self.status in PUBLIC_STATUSES:
+            from . import reviews
+
+            was_public = (
+                self.pk and Property.objects.filter(pk=self.pk, status__in=PUBLIC_STATUSES).exists()
+            )
+            if not was_public:
+                reviews.schedule(self)
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
@@ -555,3 +585,30 @@ class DuplicateDismissal(models.Model):
 
     def __str__(self):
         return f"{self.property_a_id} x {self.property_b_id}"
+
+
+class PropertyChange(models.Model):
+    """Histórico campo a campo de um imóvel: quem mudou o quê, quando e por onde."""
+
+    property = models.ForeignKey(
+        Property, on_delete=models.CASCADE, related_name="changes", verbose_name=_("imóvel")
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name=_("usuário"),
+    )
+    source = models.CharField(_("origem"), max_length=100, default="Painel")
+    created_at = models.DateTimeField(_("quando"), auto_now_add=True)
+    changes = models.JSONField(_("alterações"), default=list)
+
+    class Meta:
+        verbose_name = _("alteração do imóvel")
+        verbose_name_plural = _("alterações do imóvel")
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.property_id} @ {self.created_at:%d/%m/%Y %H:%M}"

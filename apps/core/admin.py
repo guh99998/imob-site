@@ -124,6 +124,7 @@ class SiteSettingsAdmin(MaskedAdminMixin, ModelAdmin):
             _("Contato"),
             {"fields": ("phone", "whatsapp", "email", "address", "instagram", "facebook")},
         ),
+        (_("Anúncios"), {"fields": ("review_interval_days",)}),
     )
 
     @display(description=_("pré-visualização"))
