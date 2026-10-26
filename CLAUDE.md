@@ -9,7 +9,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Não implementar fora do escopo do spec ativo; ideias novas viram um novo spec.
 - **No fim de cada feature:** atualizar o `README.md` (o que tem hoje, estrutura, roadmap) e este `CLAUDE.md` (stack, comandos, convenções novas) antes do commit.
 - Branches: trabalho em `develop`; `main` só recebe features concluídas (merge a pedido do usuário).
-- Deploy não é Heroku: `Dockerfile` genérico (sem Procfile). Produção: VPS com Docker Compose (spec 028); Caddy compartilhado em `deploy/proxy/`, imagem publicada pelo GitHub Actions no GHCR a cada push na `main`, backup com `deploy/backup.sh` (rclone/R2). Atualizar a VPS: `git pull && docker compose pull web && docker compose up -d`.
+- Deploy não é Heroku: `Dockerfile` genérico (sem Procfile). Produção: VPS com Docker Compose (spec 028); Caddy compartilhado em `deploy/proxy/`, imagem publicada pelo GitHub Actions no GHCR a cada push na `main`, backup com `deploy/backup.sh` (rclone/R2) e, para o MoneyPilot (outra stack na mesma VPS, `/opt/moneypilot`), `deploy/backup-moneypilot.sh` (dump `-Fc` em `/opt/backups`, cron 03:45). Atualizar a VPS: `git pull && docker compose pull web && docker compose up -d`.
 
 ## Comandos
 - Instalar: `uv sync` (uv não instalado? `pip install uv`; se `uv` não estiver no PATH, use `.venv\Scripts\uv.exe`)
