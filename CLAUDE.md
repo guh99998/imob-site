@@ -43,4 +43,5 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Ícones: Bootstrap Icons, só os necessários, como SVG inline em `templates/partials/icons/` (sem importar a biblioteca).
 - Traduções: `LOCALE_PATHS = locale/`; `locale/pt_BR/LC_MESSAGES/django.po` traz os textos do Unfold que o Django não cobre; `.mo` é commitado (sem `msgfmt` local, gere com um script Python) e o Dockerfile roda `compilemessages`. Texto novo do Unfold em inglês = nova entrada no `.po` + recompilar.
 - Menu do Unfold: link callable não marca "ativo"; use `"active": "apps.core.admin_navigation.<x>"` com `path_active(...)`. Faixa de demonstração do site: `DEMO_MODE` no `.env`. Categorias e demais cadastros em ordem alfabética (`Meta.ordering`); sem campo de ordem manual (só fotos têm).
+- Duplicado no cadastro (spec 030): `PropertyAdminForm.clean()` bloqueia cadastro novo parecido até `not_duplicate` vir (ids do JS ou caixa "on" sem JS); a checagem ao vivo é `PropertyAdmin.check_duplicates` + `static/properties/admin/duplicates.js`; corretor com escopo nunca vê dados dos outros imóveis nem bloqueia.
 - Não commitar `.env`, `db.sqlite3`, `media/`.

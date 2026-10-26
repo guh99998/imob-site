@@ -45,11 +45,31 @@ def _candidates(prop):
 
 
 def _dismissed_ids(prop):
+    if prop.pk is None:  # ainda não salvo: não há par dispensado
+        return set()
     pairs = DuplicateDismissal.objects.filter(Q(property_a=prop) | Q(property_b=prop))
     ids = set()
     for a, b in pairs.values_list("property_a_id", "property_b_id"):
         ids.add(b if a == prop.pk else a)
     return ids
+
+
+CHECK_FIELDS = (
+    "zip_code",
+    "number",
+    "complement",
+    "neighborhood",
+    "category",
+    "bedrooms",
+    "area_total",
+    "sale_price",
+    "rent_price",
+)
+
+
+def unsaved_from(data):
+    """Imóvel em memória (sem salvar) com os campos-chave de `data`, para checar duplicados."""
+    return Property(**{name: data[name] for name in CHECK_FIELDS if data.get(name) is not None})
 
 
 def _strong(prop):
@@ -133,6 +153,19 @@ def dismiss(user, properties):
             touched[prop.pk], touched[other.pk] = prop, other
     for prop in touched.values():
         _set_hint(prop, bool(find_duplicates(prop)))
+    return total
+
+
+def dismiss_pair_ids(user, prop, other_ids):
+    """Dispensa os pares de `prop` (já salvo) com os imóveis `other_ids` que ainda são parecidos."""
+    total = 0
+    for other, _level in find_duplicates(prop):
+        if other.pk in other_ids:
+            a, b = sorted((prop.pk, other.pk))
+            _pair, created = DuplicateDismissal.objects.get_or_create(
+                property_a_id=a, property_b_id=b, defaults={"created_by": user}
+            )
+            total += created
     return total
 
 

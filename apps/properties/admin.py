@@ -1,12 +1,17 @@
+import re
+
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
 from django.db.models import Count, Max
+from django.http import HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
@@ -119,6 +124,23 @@ class MultipleImageField(forms.ImageField):
         return [single(data, initial)] if data else []
 
 
+def duplicates_panel(matches, fallback=False):
+    """Painel "possível duplicado" (cards) usado pela checagem ao vivo e pelo erro do formulário."""
+    items = [
+        {
+            "prop": prop,
+            "level": duplicates.LEVEL_LABELS[level],
+            "price": format_brl(prop.display_price) if prop.display_price else "",
+            "cover": prop.cover,
+            "url": reverse("admin:properties_property_change", args=[prop.pk]),
+        }
+        for prop, level in matches
+    ]
+    return render_to_string(
+        "admin/properties/duplicates_panel.html", {"items": items, "fallback": fallback}
+    )
+
+
 class PropertyAdminForm(forms.ModelForm):
     bulk_photos = MultipleImageField(
         label=_("Adicionar várias fotos"),
@@ -142,6 +164,10 @@ class PropertyAdminForm(forms.ModelForm):
         "area_built": _("m²"),
     }
 
+    # Ids dos imóveis que o usuário marcou como "não é duplicado" (ou "on" na confirmação sem JS).
+    not_duplicate = forms.CharField(required=False, widget=forms.HiddenInput)
+    user = None  # preenchido por PropertyAdmin.get_form
+
     class Meta:
         model = Property
         fields = "__all__"  # noqa: DJ007 - o admin limita aos campos dos fieldsets
@@ -153,6 +179,32 @@ class PropertyAdminForm(forms.ModelForm):
         for name, text in self.PLACEHOLDERS.items():
             if name in self.fields:
                 self.fields[name].widget.attrs.setdefault("placeholder", str(text))
+
+    def confirmed_ids(self):
+        """None = sem confirmação; conjunto de ids confirmados (vazio = todos os parecidos)."""
+        raw = (self.cleaned_data.get("not_duplicate") or "").strip()
+        if not raw or raw.lower() in {"false", "0"}:
+            return None
+        return {int(n) for n in re.findall(r"\d+", raw)}
+
+    def duplicate_matches(self):
+        """Parecidos de um cadastro novo. O Corretor não vê imóveis dos outros: só o aviso."""
+        if self.instance.pk or (self.user is not None and is_scoped(self.user)):
+            return []
+        return duplicates.find_duplicates(duplicates.unsaved_from(self.cleaned_data))
+
+    def clean(self):
+        cleaned = super().clean()
+        matches = self.duplicate_matches()
+        ids = self.confirmed_ids()
+        pending = [m for m in matches if ids is None or (ids and m[0].pk not in ids)]
+        if pending:
+            # Sem JS: o painel vira erro e o campo escondido vira a caixa de confirmação.
+            field = self.fields["not_duplicate"]
+            field.widget = forms.CheckboxInput()
+            field.label = _("Confirmo que este imóvel não é duplicado")
+            raise ValidationError(mark_safe(duplicates_panel(matches, fallback=True)))  # noqa: S308
+        return cleaned
 
 
 class PropertyPhotoInline(TabularInline):
@@ -204,7 +256,12 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     search_help_text = _("Buscar por código, título, rua ou bairro")
     autocomplete_fields = ("neighborhood",)
     form = PropertyAdminForm
+    change_form_before_template = "admin/properties/duplicates_slot.html"
     inlines = [PropertyPhotoInline]
+
+    class Media:
+        js = ("properties/admin/duplicates.js",)
+
     actions = ["publish", "mark_sold", "mark_rented", "feature", "dismiss_duplicates"]
     actions_row = ["view_on_site_action", "generate_document_row"]
     actions_detail = ["generate_document_detail"]
@@ -222,6 +279,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
                     "status",
                     "is_featured",
                     "description",
+                    "not_duplicate",
                 ),
             },
         ),
@@ -305,13 +363,51 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
             kwargs["queryset"] = Broker.objects.filter(is_active=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.user = request.user
+        return form
+
+    def get_urls(self):
+        custom = [
+            path(
+                "check-duplicates/",
+                self.admin_site.admin_view(self.check_duplicates),
+                name="properties_property_check_duplicates",
+            )
+        ]
+        return custom + super().get_urls()
+
+    def check_duplicates(self, request):
+        """Checagem ao vivo do cadastro: devolve o painel de parecidos (204 se não há)."""
+        if request.method != "POST":
+            return HttpResponseNotAllowed(["POST"])
+        if not self.has_add_permission(request):
+            return HttpResponse(status=403)
+        form = self.get_form(request)(request.POST)
+        form._clean_fields()  # só interessa o que já é válido; erros de campo não importam aqui
+        prop = duplicates.unsaved_from(form.cleaned_data)
+        matches = duplicates.find_duplicates(prop)
+        if not matches:
+            return HttpResponse(status=204)
+        if is_scoped(request.user):  # o Corretor não vê imóveis dos outros
+            return HttpResponse(
+                render_to_string("admin/properties/duplicates_panel.html", {"generic": True})
+            )
+        return HttpResponse(duplicates_panel(matches))
+
     def save_model(self, request, obj, form, change):
-        if not obj.pk:
+        adding = not obj.pk
+        if adding:
             obj.created_by = request.user
         obj.updated_by = request.user
         if is_scoped(request.user) and not obj.broker_id:
             obj.broker = getattr(request.user, "broker", None)
         super().save_model(request, obj, form, change)
+        ids = form.confirmed_ids() if adding and not is_scoped(request.user) else None
+        if ids is not None:
+            others = ids or {m.pk for m, _level in duplicates.find_duplicates(obj)}
+            duplicates.dismiss_pair_ids(request.user, obj, others)
         self.warn_duplicates(request, obj)
 
     def warn_duplicates(self, request, obj):
