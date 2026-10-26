@@ -88,6 +88,8 @@ def test_admin_edit_records_fields_features_and_photos(admin_client):
     assert fields["sale_price"]["new"] == "R$ 520.000,00"
     assert fields["features"]["new"] == "Piscina"
     assert PropertyChange.objects.filter(property=prop).count() == 1
+    names = [c["field"] for c in row.changes]
+    assert len(names) == len(set(names))  # cada campo aparece uma vez
 
 
 def test_admin_add_records_creation(admin_client):
@@ -224,3 +226,42 @@ def test_scoped_user_badge_counts_only_own(rf, admin_user, monkeypatch):
 def test_settings_form_has_review_interval(admin_client):
     url = reverse("admin:core_sitesettings_change", args=[SiteSettings.load().pk])
     assert "review_interval_days" in admin_client.get(url).content.decode()
+
+
+# --- modo visualização (spec 035) ------------------------------------------------------------
+
+
+def test_change_page_opens_in_view_mode_with_edit_button(admin_client):
+    prop = PropertyFactory()
+    html = admin_client.get(_change_url(prop)).content.decode()
+    assert 'id="view-mode-bar"' in html and "Editar informações" in html
+    assert "properties/admin/view_mode.js" in html
+    add = admin_client.get(reverse("admin:properties_property_add")).content.decode()
+    assert "view-mode-bar" not in add  # cadastro novo já nasce editável
+
+
+def test_view_only_user_has_no_edit_button(client):
+    from django.contrib.auth.models import Permission
+
+    viewer = get_user_model().objects.create_user("leitor", password="pw", is_staff=True)
+    viewer.user_permissions.add(Permission.objects.get(codename="view_property"))
+    client.force_login(viewer)
+    html = client.get(_change_url(PropertyFactory())).content.decode()
+    assert "view-mode-bar" not in html
+
+
+def test_save_and_continue_returns_in_edit_mode(admin_client):
+    prop = PropertyFactory()
+    data = _change_data(prop, title="Outro título")
+    data["_continue"] = "1"
+    r = admin_client.post(_change_url(prop), data)
+    assert r.status_code == 302 and r.url.endswith("?editar=1")
+    plain = _change_data(prop, title="Mais um título")
+    assert not admin_client.post(_change_url(prop), plain).url.endswith("?editar=1")
+
+
+def test_validation_error_reopens_in_edit_mode(admin_client):
+    prop = PropertyFactory()
+    r = admin_client.post(_change_url(prop), _change_data(prop, title=""))
+    assert r.status_code == 200
+    assert 'data-start-editing="1"' in r.content.decode()

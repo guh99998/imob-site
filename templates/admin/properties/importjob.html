@@ -2,27 +2,28 @@
 {% load static %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'properties/admin/panels.css' %}">
 <script src="{% static 'js/htmx.min.js' %}" defer></script>
-<div class="max-w-4xl grid gap-6">
-  <p class="text-sm opacity-75">
+<div class="pa-import">
+  <p class="pa-muted">
     {{ job.get_source_display }} · enviada em {{ job.created_at|date:"d/m/Y H:i" }} · {{ job.total }} linha{{ job.total|pluralize }}
-    · <a class="underline" href="{% url 'admin:properties_importjob_changelist' %}">importações anteriores</a>
-    · <a class="underline" href="{% url 'admin:properties_importjob_add' %}">nova importação</a>
+    · <a style="text-decoration: underline" href="{% url 'admin:properties_importjob_changelist' %}">importações anteriores</a>
+    · <a style="text-decoration: underline" href="{% url 'admin:properties_importjob_add' %}">nova importação</a>
   </p>
 
   {% if job.status == "PREVIEW" %}
     {% if unmapped %}
     <section>
-      <h2 class="text-lg font-semibold mb-2">1. Ligue os tipos do portal às suas categorias</h2>
-      <p class="text-sm mb-3">O feed usa tipos próprios. Escolha a categoria de cada um (ou ignore os imóveis daquele tipo).</p>
+      <h2>1. Ligue os tipos do portal às suas categorias</h2>
+      <p class="pa-muted">O feed usa tipos próprios. Escolha a categoria de cada um (ou ignore os imóveis daquele tipo).</p>
       <form method="post">{% csrf_token %}
         <input type="hidden" name="action" value="map">
-        <table class="text-sm">
+        <table class="pa-map">
           {% for t in unmapped %}
           <tr>
-            <td class="pr-4 py-1"><code>{{ t }}</code></td>
+            <td><code>{{ t }}</code></td>
             <td>
-              <select name="map__{{ t }}" class="border rounded-default px-2 py-1 bg-white dark:bg-base-900" required>
+              <select name="map__{{ t }}" required>
                 <option value="">Escolha…</option>
                 {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
                 <option value="{{ ignore_value }}">Ignorar estes imóveis</option>
@@ -31,33 +32,33 @@
           </tr>
           {% endfor %}
         </table>
-        <button type="submit" class="mt-3 px-4 py-2 rounded-default bg-primary-600 text-white font-medium">Ver prévia</button>
+        <button type="submit" class="pa-btn pa-btn-primary" style="margin-top: .75rem">Ver prévia</button>
       </form>
     </section>
     {% else %}
     <section>
-      <h2 class="text-lg font-semibold mb-2">Prévia</h2>
-      <ul class="flex flex-wrap gap-6 text-sm">
-        <li><strong class="text-2xl">{{ preview.new }}</strong><br>novos</li>
-        <li><strong class="text-2xl">{{ preview.updated }}</strong><br>atualizados</li>
-        <li><strong class="text-2xl">{{ preview.invalid|length }}</strong><br>com erro (serão ignorados)</li>
-        {% if preview.skipped %}<li><strong class="text-2xl">{{ preview.skipped }}</strong><br>ignorados pelo tipo</li>{% endif %}
+      <h2>Prévia</h2>
+      <ul class="pa-stats">
+        <li><strong>{{ preview.new }}</strong>novos</li>
+        <li><strong>{{ preview.updated }}</strong>atualizados</li>
+        <li><strong>{{ preview.invalid|length }}</strong>com erro (serão ignorados)</li>
+        {% if preview.skipped %}<li><strong>{{ preview.skipped }}</strong>ignorados pelo tipo</li>{% endif %}
       </ul>
       {% if invalid_shown %}
-      <h3 class="mt-4 font-semibold">Linhas com erro</h3>
-      <ul class="mt-2 grid gap-1 text-sm text-red-700">
+      <h3>Linhas com erro</h3>
+      <ul class="pa-list pa-err">
         {% for i in invalid_shown %}<li>Linha {{ i.row }}{% if i.ref %} ({{ i.ref }}){% endif %}: {{ i.message }}</li>{% endfor %}
       </ul>
-      {% if invalid_more %}<p class="text-sm opacity-75 mt-1">…e mais {{ invalid_more }} (corrija o arquivo para ver todas).</p>{% endif %}
+      {% if invalid_more %}<p class="pa-muted">…e mais {{ invalid_more }} (corrija o arquivo para ver todas).</p>{% endif %}
       {% endif %}
       {% if job.source == "XML" and job.type_map %}
-      <details class="mt-4 text-sm"><summary class="cursor-pointer">Tipos do portal ligados</summary>
-        <ul class="mt-2">{% for t, c in job.type_map.items %}<li><code>{{ t }}</code> → {% if c %}{{ c }}{% else %}ignorado{% endif %}</li>{% endfor %}</ul>
+      <details style="margin-top: 1rem; font-size: .875rem"><summary style="cursor: pointer">Tipos do portal ligados</summary>
+        <ul class="pa-list">{% for t, c in job.type_map.items %}<li><code>{{ t }}</code> → {% if c %}{{ c }}{% else %}ignorado{% endif %}</li>{% endfor %}</ul>
       </details>
       {% endif %}
-      <form method="post" class="mt-5">{% csrf_token %}
+      <form method="post" style="margin-top: 1.25rem">{% csrf_token %}
         <input type="hidden" name="action" value="confirm">
-        <button type="submit" class="px-4 py-2 rounded-default bg-primary-600 text-white font-medium"
+        <button type="submit" class="pa-btn pa-btn-primary"
                 {% if not preview.new and not preview.updated %}disabled{% endif %}>
           Confirmar e importar {{ preview.new|add:preview.updated }} imóve{{ preview.new|add:preview.updated|pluralize:"l,is" }}
         </button>

@@ -65,6 +65,10 @@ class ImportJobAdmin(ModelAdmin):
     )
     list_display_links = ("created_at",)
     change_form_before_template = "admin/properties/importjob_help.html"
+
+    class Media:
+        css = {"all": ("properties/admin/panels.css",)}
+
     fields = ("source", "file", "zip_file", "feed_url")
 
     @display(description=_("situação"), ordering="status", label=STATUS_LABELS)

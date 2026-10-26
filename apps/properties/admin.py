@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Max
-from django.http import HttpResponse, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseNotAllowed, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import path, reverse
@@ -167,7 +167,8 @@ class PropertyAdminForm(forms.ModelForm):
         "area_built": _("m²"),
     }
 
-    # Ids dos imóveis que o usuário marcou como "não é duplicado" (ou "on" na confirmação sem JS).
+    # Ids dos imóveis marcados como "não é duplicado" (ou "on" na caixa do painel, sem JS).
+    # Fica fora dos fieldsets: o JS cria o campo e a caixa vem dentro do painel de erro.
     not_duplicate = forms.CharField(required=False, widget=forms.HiddenInput)
     user = None  # preenchido por PropertyAdmin.get_form
 
@@ -202,10 +203,7 @@ class PropertyAdminForm(forms.ModelForm):
         ids = self.confirmed_ids()
         pending = [m for m in matches if ids is None or (ids and m[0].pk not in ids)]
         if pending:
-            # Sem JS: o painel vira erro e o campo escondido vira a caixa de confirmação.
-            field = self.fields["not_duplicate"]
-            field.widget = forms.CheckboxInput()
-            field.label = _("Confirmo que este imóvel não é duplicado")
+            # Sem JS: o painel vira erro e traz a caixa "Confirmo que não é duplicado".
             raise ValidationError(mark_safe(duplicates_panel(matches, fallback=True)))  # noqa: S308
         return cleaned
 
@@ -226,6 +224,21 @@ class PropertyPhotoInline(TabularInline):
         if obj.pk and obj.image:
             return format_html('<img src="{}" style="height:60px">', obj.image.url)
         return "-"
+
+
+class DuplicateFilter(DropdownFilter):
+    """Mantém o parâmetro antigo (`duplicate_hint__exact`) para não quebrar links salvos."""
+
+    title = _("duplicidade")
+    parameter_name = "duplicate_hint__exact"
+
+    def lookups(self, request, model_admin):
+        return [("1", _("Possível duplicado")), ("0", _("Sem suspeita de duplicado"))]
+
+    def queryset(self, request, queryset):
+        if self.value() in ("1", "0"):
+            return queryset.filter(duplicate_hint=self.value() == "1")
+        return queryset
 
 
 class ReviewFilter(DropdownFilter):
@@ -291,7 +304,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         "purpose",
         "category",
         "neighborhood__city",
-        "duplicate_hint",
+        DuplicateFilter,
         ReviewFilter,
     )
     list_editable = ("is_featured",)
@@ -305,7 +318,8 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
     inlines = [PropertyPhotoInline]
 
     class Media:
-        js = ("properties/admin/duplicates.js",)
+        css = {"all": ("properties/admin/panels.css",)}
+        js = ("properties/admin/duplicates.js", "properties/admin/view_mode.js")
 
     actions = [
         "publish",
@@ -332,7 +346,6 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
                     "is_featured",
                     "review_due",
                     "description",
-                    "not_duplicate",
                 ),
             },
         ),
@@ -410,6 +423,8 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
 
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)
+        if "review_due" not in initial and (due := reviews.next_due()):
+            initial["review_due"] = due
         broker = getattr(request.user, "broker", None)
         if broker and "broker" not in initial:
             initial["broker"] = broker.pk
@@ -421,6 +436,14 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
 
             kwargs["queryset"] = Broker.objects.filter(is_active=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def response_change(self, request, obj):
+        response = super().response_change(request, obj)
+        if "_continue" in request.POST and isinstance(response, HttpResponseRedirect):
+            # "Salvar e continuar editando": volta direto ao modo de edição.
+            joiner = "&" if "?" in response["Location"] else "?"
+            response["Location"] += f"{joiner}editar=1"
+        return response
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         extra_context = extra_context or {}
@@ -476,9 +499,10 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
             if adding:
                 form._history_row = history.record_created(obj, request.user)
             elif before is not None:
-                form._history_row = history.record_changes(
-                    obj, before, history.snapshot(obj), request.user
-                )
+                after = history.snapshot(obj)
+                form._history_row = history.record_changes(obj, before, after, request.user)
+                # save_related só deve somar o que muda depois (comodidades e fotos).
+                form._history_before = after
         ids = form.confirmed_ids() if adding and not is_scoped(request.user) else None
         if ids is not None:
             others = ids or {m.pk for m, _level in duplicates.find_duplicates(obj)}

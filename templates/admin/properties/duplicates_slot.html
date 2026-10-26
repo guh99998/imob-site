@@ -1,3 +1,8 @@
 {% if add %}
 <div id="duplicates-panel" data-check-url="{% url 'admin:properties_property_check_duplicates' %}" aria-live="polite"></div>
+{% elif has_change_permission %}
+<div id="view-mode-bar" class="pa-viewbar" data-start-editing="{% if errors %}1{% endif %}">
+  <p class="pa-viewbar-text"><strong>Modo visualização.</strong> Clique em “Editar informações” para alterar este imóvel.</p>
+  <button type="button" class="pa-btn pa-btn-primary" data-edit-button>Editar informações</button>
+</div>
 {% endif %}

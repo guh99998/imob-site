@@ -1,6 +1,11 @@
 {% url 'admin:crm_client_changelist' as list_url %}
 {% url 'admin:crm_client_kanban' as kanban_url %}
-<nav class="flex gap-2 mb-4 text-sm" aria-label="Modo de visualização">
-  <a href="{{ list_url }}" class="px-3 py-1.5 rounded-default border {% if current == 'kanban' %}border-base-200 dark:border-base-700{% else %}bg-primary-600 text-white border-primary-600{% endif %}" {% if current != 'kanban' %}aria-current="page"{% endif %}>Ver em lista</a>
-  <a href="{{ kanban_url }}" class="px-3 py-1.5 rounded-default border {% if current == 'kanban' %}bg-primary-600 text-white border-primary-600{% else %}border-base-200 dark:border-base-700{% endif %}" {% if current == 'kanban' %}aria-current="page"{% endif %}>Ver em kanban</a>
+<style>
+  .view-toggle { display: flex; gap: .5rem; margin-bottom: 1rem; font-size: .875rem; }
+  .view-toggle a { padding: .375rem .75rem; border: 1px solid rgb(0 0 0 / .2); border-radius: 4px; text-decoration: none; color: inherit; }
+  .view-toggle a[aria-current] { background: var(--color-primary-600, #7c3aed); border-color: var(--color-primary-600, #7c3aed); color: #fff; }
+</style>
+<nav class="view-toggle" aria-label="Modo de visualização">
+  <a href="{{ list_url }}" {% if current != 'kanban' %}aria-current="page"{% endif %}>Ver em lista</a>
+  <a href="{{ kanban_url }}" {% if current == 'kanban' %}aria-current="page"{% endif %}>Ver em kanban</a>
 </nav>

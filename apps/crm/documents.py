@@ -223,6 +223,37 @@ def generate(template, *, client=None, property=None, guarantor=None, user=None)
     )
 
 
+MAX_EDITED_TEXT = 200_000
+
+
+def edit_text(doc, text):
+    """Troca o texto do documento por `text` (texto simples → HTML seguro, como na geração).
+
+    Guarda o texto original na primeira edição. Levanta DocumentError se vier vazio/grande.
+    """
+    from django.utils import timezone
+
+    text = (text or "").strip()
+    if not text:
+        raise DocumentError("O documento não pode ficar vazio.")
+    if len(text) > MAX_EDITED_TEXT:
+        raise DocumentError("Texto grande demais.")
+    if not doc.edited_at:
+        doc.original_html = doc.html
+    doc.html = to_html(text)
+    doc.edited_at = timezone.now()
+    doc.save(update_fields=["html", "original_html", "edited_at"])
+    return doc
+
+
+def restore_original(doc):
+    if not doc.original_html:
+        return False
+    doc.html, doc.original_html, doc.edited_at = doc.original_html, "", None
+    doc.save(update_fields=["html", "original_html", "edited_at"])
+    return True
+
+
 def new_document_url(*, property=None, client=None):
     query = {k: v.pk for k, v in (("property", property), ("client", client)) if v}
     return reverse("admin:crm_generateddocument_new") + (f"?{urlencode(query)}" if query else "")

@@ -1,10 +1,8 @@
-<div data-bulk-photos class="border-2 border-dashed border-base-300 dark:border-base-700 rounded-default p-6 text-center">
+<div data-bulk-photos class="pa-drop">
   {{ input_html }}
-  <p class="mt-2 text-sm text-font-subtle-light dark:text-font-subtle-dark">
-    <strong>Escolher fotos</strong> ou arraste aqui
-  </p>
-  <p data-bulk-photos-count class="mt-1 text-sm font-medium" role="status" aria-live="polite"></p>
-  <ul data-bulk-photos-list class="mt-1 text-xs text-left max-h-32 overflow-auto"></ul>
+  <p class="pa-drop-hint"><strong>Escolher fotos</strong> ou arraste aqui</p>
+  <p data-bulk-photos-count class="pa-drop-count" role="status" aria-live="polite"></p>
+  <ul data-bulk-photos-list class="pa-drop-list"></ul>
 </div>
 <script>
 (function () {
@@ -20,10 +18,10 @@
   }
   input.addEventListener("change", render);
   ["dragover", "dragenter"].forEach(function (ev) {
-    box.addEventListener(ev, function (e) { e.preventDefault(); box.classList.add("bg-base-100"); });
+    box.addEventListener(ev, function (e) { e.preventDefault(); box.classList.add("is-over"); });
   });
   ["dragleave", "drop"].forEach(function (ev) {
-    box.addEventListener(ev, function () { box.classList.remove("bg-base-100"); });
+    box.addEventListener(ev, function () { box.classList.remove("is-over"); });
   });
   box.addEventListener("drop", function (e) {
     e.preventDefault();

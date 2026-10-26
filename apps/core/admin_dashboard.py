@@ -58,7 +58,7 @@ def crm_context(request):
         ],
         "followups": list(
             pending.filter(due_date__lte=today + timedelta(days=3))
-            .select_related("client")
+            .select_related("client", "broker")
             .order_by("due_date")[:8]
         ),
         "shortcuts": [

@@ -160,7 +160,14 @@ UNFOLD = {
     "SITE_URL": "/",
     "SHOW_HISTORY": True,
     "THEME": "light",
-    "SCRIPTS": ["apps.core.admin_navigation.masks_script"],
+    "SCRIPTS": [
+        "apps.core.admin_navigation.masks_script",
+        "apps.core.admin_navigation.mobile_script",
+    ],
+    "STYLES": [
+        "apps.core.admin_navigation.mobile_styles",
+        "apps.core.admin_navigation.checklists_styles",
+    ],
     "BORDER_RADIUS": "4px",
     "DASHBOARD_CALLBACK": "apps.core.admin_dashboard.dashboard_callback",
     # Paleta alinhada ao site público.
@@ -220,13 +227,6 @@ UNFOLD = {
                         "link": reverse_lazy("admin:properties_property_add"),
                         "active": "apps.core.admin_navigation.add_property_active",
                         "permission": "apps.core.admin_navigation.can_add_property",
-                    },
-                    {
-                        "title": _("Importar imóveis"),
-                        "icon": "upload_file",
-                        "link": reverse_lazy("admin:properties_importjob_add"),
-                        "active": "apps.core.admin_navigation.import_active",
-                        "permission": "apps.core.admin_navigation.can_add_importjob",
                     },
                     {
                         "title": _("Categorias"),
@@ -360,12 +360,6 @@ UNFOLD = {
                         "link": site_settings_link,
                         "active": "apps.core.admin_navigation.site_settings_active",
                         "permission": "apps.core.admin_navigation.can_view_settings",
-                    },
-                    {
-                        "title": _("Chaves de API"),
-                        "icon": "key",
-                        "link": reverse_lazy("admin:api_apikey_changelist"),
-                        "permission": "apps.core.admin_navigation.can_view_apikey",
                     },
                     {
                         "title": _("Equipe"),

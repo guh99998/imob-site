@@ -15,7 +15,6 @@ def _perm(codename):
 can_view_property = _perm("properties.view_property")
 can_add_property = _perm("properties.add_property")
 can_view_category = _perm("properties.view_category")
-can_add_importjob = _perm("properties.add_importjob")
 can_view_feature = _perm("properties.view_feature")
 can_view_city = _perm("properties.view_city")
 can_view_neighborhood = _perm("properties.view_neighborhood")
@@ -35,7 +34,6 @@ can_view_partner = _feature_perm("partners", "people.view_partner")
 can_view_owner = _feature_perm("owners", "people.view_owner")
 can_view_guarantor = _feature_perm("owners", "people.view_guarantor")
 can_view_search = _feature_perm("searches", "leads.view_propertysearch")
-can_view_apikey = _feature_perm("api", "api.view_apikey")
 can_view_client = _feature_perm("crm", "crm.view_client")
 can_view_followup = _feature_perm("crm", "crm.view_followup")
 can_view_document = _feature_perm("crm", "crm.view_generateddocument")
@@ -46,6 +44,24 @@ def can_view_user(request):
     from apps.people.roles import ADMIN, role_of
 
     return role_of(request.user) == ADMIN and request.user.has_perm("auth.view_user")
+
+
+def mobile_styles(request):
+    from django.templatetags.static import static
+
+    return static("core/admin/mobile.css")
+
+
+def checklists_styles(request):
+    from django.templatetags.static import static
+
+    return static("core/admin/checklists.css")
+
+
+def mobile_script(request):
+    from django.templatetags.static import static
+
+    return static("core/admin/mobile.js")
 
 
 def masks_script(request):
@@ -109,10 +125,6 @@ def pending_reviews_badge(request):
 
 def pending_reviews_link(request):
     return reverse("admin:properties_property_changelist") + "?review=overdue"
-
-
-def import_active(request):
-    return request.path.startswith(reverse("admin:properties_importjob_changelist"))
 
 
 def pending_reviews_active(request):

@@ -9,10 +9,12 @@ Site de imobiliária (venda e aluguel) com painel de gestão. Django 6.1, Python
 - **Mais procurados:** a home mostra as buscas mais feitas nos últimos 30 dias (sem dado pessoal, sem robôs); a tabela `SearchQuery` só alimenta a home (sem tela no painel).
 - **CRM de clientes:** tudo o que entra pelo site (mensagem de imóvel, contato, anúncio, "Procuro um imóvel") vira um cliente sem duplicar (casa por WhatsApp ou email), com histórico, corretor responsável, etapa do funil, retornos agendados (no dashboard e na sidebar) e anonimização (LGPD). O Corretor vê só os próprios clientes.
 - **API aberta:** `/api/v1/` com chave (`Authorization: Api-Key …`) criada no painel: enviar contatos (sem duplicar cliente), ler/atualizar clientes e histórico, ler imóveis publicados e, com chave de permissão total, **cadastrar/atualizar imóveis e fotos** (`external_ref` evita duplicar ao reenviar; fotos por upload ou URL pública, até 10 MB). Documentação em `/api/docs/`. Ligada por padrão; desligue tirando `api` de `FEATURES`.
-- **Documentos:** termo de visita, proposta, contratos e recibo gerados a partir de modelos editáveis no painel (com valor por extenso), em página A4 para imprimir ou salvar em PDF, com histórico de quem gerou o quê. Modelos-base de exemplo: `manage.py seed_document_templates`.
+- **Documentos:** termo de visita, proposta, contratos e recibo gerados a partir de modelos editáveis no painel (com valor por extenso), em página A4 para imprimir ou salvar em PDF; o texto gerado pode ser **editado na página de impressão** (ex.: valor do recibo), com "Restaurar original", com histórico de quem gerou o quê. Modelos-base de exemplo: `manage.py seed_document_templates`.
 - **Duplicados:** no cadastro novo o painel avisa **antes de salvar** (cards com "Quero atualizar esse imóvel" / "Não é duplicado"; sem JS vira erro com caixa de confirmação) e, ao salvar, avisa se ele repete outro (mesmo CEP, número e complemento, ou características parecidas); coluna e filtro na lista, ação "Marcar como não duplicado" e comando `find_duplicates` para varrer o estoque.
 - **Histórico e revisão do imóvel:** cada alteração (painel, ações em lote) fica registrada campo a campo (quem, quando, de → para) no fim do formulário; imóveis publicados têm prazo de revisão (padrão 60 dias, ajustável em Dados da imobiliária; 0 desliga) com "Revisões pendentes" na sidebar, no painel e filtro/coluna na lista.
-- **Importação em lote:** Imóveis → Importar imóveis (Administrador/Gerente). Planilha XLSX/CSV (modelo para baixar) + ZIP de fotos, ou XML VivaReal/ZAP (arquivo ou URL), com prévia antes de confirmar e progresso em lotes sem worker. Reenviar a mesma `ref_externa` atualiza em vez de duplicar. Cargas grandes: `manage.py import_properties arquivo.xlsx --zip fotos.zip`.
+- **Importação em lote** (para a implantação; não aparece no menu, abre em `/admin/properties/importjob/add/` para Administrador/Gerente). Planilha XLSX/CSV (modelo para baixar) + ZIP de fotos, ou XML VivaReal/ZAP (arquivo ou URL), com prévia antes de confirmar e progresso em lotes sem worker. Reenviar a mesma `ref_externa` atualiza em vez de duplicar. Cargas grandes: `manage.py import_properties arquivo.xlsx --zip fotos.zip`.
+- **Admin no celular:** painel inicial e atalhos empilhados, listas (imóveis, clientes, retornos…) viram cartões abaixo de 768 px e o kanban rola uma coluna por vez; cadastro de imóvel em coluna única (`apps/core/static/core/admin/mobile.{css,js}`).
+- **Detalhes do painel:** página do imóvel abre só para leitura ("Editar informações" libera), comodidades e permissões em checklist de várias colunas, usuário com botão "Redefinir senha" e chaves de API só para o superusuário.
 - **Painel (`/admin/`):** imóveis com código automático por categoria, fotos em lote (arrastar e soltar), comodidades em checkboxes, placeholders, máscaras, pesquisa avançada, leads e procuras (lista com resumo, WhatsApp clicável e imóveis compatíveis), tudo em ordem alfabética e em pt-BR (`locale/pt_BR`, com os textos do Unfold), corretores/parceiros/proprietários com funções e auditoria.
 - **Módulos opcionais por site:** variável `FEATURES` (`brokers`, `partners`, `owners`, `searches`, `crm`, `api`; todos vêm ligados).
 
@@ -66,7 +68,7 @@ VPS com Docker Compose (spec 028). O **Caddy** (HTTPS automático) é uma stack 
 
 ## Cadastrar imóveis por script (API)
 ```bash
-KEY="imob_..."   # chave com permissão total, criada em Configurações → Chaves de API
+KEY="imob_..."   # chave com permissão total, gerada por você (superusuário) em /admin/api/apikey/add/
 curl -X POST https://SEU-SITE/api/v1/properties/ \
   -H "Authorization: Api-Key $KEY" -H "Content-Type: application/json" \
   -d '{"external_ref": "ERP-1", "title": "Casa 3 quartos", "category": "Casa",
@@ -103,6 +105,8 @@ Plano em `plans/plano-016-022-novas-funcoes.md`:
 - [x] 031 — Histórico do imóvel e data de revisão
 - [x] 032 — API de escrita de imóveis (`external_ref`, fotos por upload/URL)
 - [x] 033 — Importação em lote (planilha + ZIP, XML VivaReal/ZAP, comando)
+- [x] 034 — Admin no celular (painel, listas em cartões, kanban)
+- [x] 035 — Ajustes do painel (modo visualização, documento editável, checklists, itens de implantação fora do menu)
 
 Plano em `plans/2026-10-26-correcoes-admin.md` (concluído; ideias novas viram specs novos).
 

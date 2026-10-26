@@ -159,3 +159,77 @@ def test_slot_and_script_present_on_add_page(admin_client):
     html = admin_client.get(reverse("admin:properties_property_add")).content.decode()
     assert 'id="duplicates-panel"' in html
     assert "properties/admin/duplicates.js" in html
+
+
+def test_add_page_has_no_stray_not_duplicate_field(admin_client):
+    html = admin_client.get(reverse("admin:properties_property_add")).content.decode().lower()
+    assert "not duplicate" not in html and "not_duplicate" not in html
+
+
+def test_panel_shows_placeholder_for_property_without_photo(admin_client):
+    PropertyFactory(**ADDR)
+    r = admin_client.post(
+        reverse("admin:properties_property_check_duplicates"),
+        {"zip_code": "13000-000", "number": "120", "complement": "Apto 12"},
+    )
+    html = r.content.decode()
+    assert "Sem foto" in html and "<img" not in html
+    assert "w-20" not in html  # estilo próprio (panels.css), não classes que o Unfold não tem
+
+
+def test_panel_shows_cover_thumbnail_when_there_is_a_photo(admin_client, settings, tmp_path):
+    import io
+
+    from django.core.files.base import ContentFile
+    from PIL import Image
+
+    from apps.properties.models import PropertyPhoto
+
+    settings.MEDIA_ROOT = tmp_path
+    existing = PropertyFactory(**ADDR)
+    buf = io.BytesIO()
+    Image.new("RGB", (40, 30), "red").save(buf, format="PNG")
+    PropertyPhoto.objects.create(
+        property=existing, image=ContentFile(buf.getvalue(), name="a.png"), is_cover=True
+    )
+    r = admin_client.post(
+        reverse("admin:properties_property_check_duplicates"),
+        {"zip_code": "13000-000", "number": "120", "complement": "Apto 12"},
+    )
+    html = r.content.decode()
+    assert "<img" in html and "Sem foto" not in html
+
+
+def test_fallback_panel_carries_the_confirmation_checkbox(admin_client):
+    existing = PropertyFactory(**ADDR)
+    r = admin_client.post(reverse("admin:properties_property_add"), _post_data(existing))
+    html = r.content.decode()
+    assert 'type="checkbox" name="not_duplicate"' in html
+    confirmed = admin_client.post(
+        reverse("admin:properties_property_add"), _post_data(existing, not_duplicate="on")
+    )
+    assert confirmed.status_code == 302
+
+
+def test_duplicate_filter_is_readable_and_keeps_old_param(admin_client):
+    dup = PropertyFactory(duplicate_hint=True)
+    ok = PropertyFactory()
+    url = reverse("admin:properties_property_changelist")
+    html = admin_client.get(url).content.decode()
+    assert "Possível duplicado" in html and "Sem suspeita de duplicado" in html
+
+    def listed(value):
+        r = admin_client.get(url, {"duplicate_hint__exact": value})
+        return {p.pk for p in r.context["cl"].result_list}
+
+    assert listed("1") == {dup.pk} and listed("0") == {ok.pk}
+
+
+def test_add_form_suggests_review_date(admin_client):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    html = admin_client.get(reverse("admin:properties_property_add")).content.decode()
+    due = timezone.localdate() + timedelta(days=60)
+    assert f"{due:%d/%m/%Y}" in html or f"{due:%Y-%m-%d}" in html

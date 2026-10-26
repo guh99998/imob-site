@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_POST
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action, display
 from unfold.widgets import UnfoldAdminSelectWidget
@@ -575,7 +576,15 @@ class GeneratedDocumentAdmin(FeatureGatedAdminMixin, ModelAdmin):
     """Histórico (só leitura) + as telas de gerar e imprimir."""
 
     feature = "crm"
-    list_display = ("title", "client", "property", "generated_by", "created_at", "print_link")
+    list_display = (
+        "title",
+        "client",
+        "property",
+        "generated_by",
+        "created_at",
+        "edited_badge",
+        "print_link",
+    )
     list_filter = ("template__kind", "created_at")
     list_select_related = ("client", "property", "generated_by")
     search_fields = ("title", "client__name", "property__code", "property__title")
@@ -599,6 +608,12 @@ class GeneratedDocumentAdmin(FeatureGatedAdminMixin, ModelAdmin):
         return [
             path("gerar/", wrap(self.new_view), name=f"{prefix}_new"),
             path("<int:pk>/imprimir/", wrap(self.print_view), name=f"{prefix}_print"),
+            path("<int:pk>/editar/", wrap(require_POST(self.edit_view)), name=f"{prefix}_edit"),
+            path(
+                "<int:pk>/restaurar/",
+                wrap(require_POST(self.restore_view)),
+                name=f"{prefix}_restore",
+            ),
             *super().get_urls(),
         ]
 
@@ -649,8 +664,35 @@ class GeneratedDocumentAdmin(FeatureGatedAdminMixin, ModelAdmin):
             "doc": doc,
             "site": SiteSettings.load(),
             "back": reverse("admin:crm_generateddocument_changelist"),
+            "can_edit": documents.can_generate(request),
+            "edit_url": reverse("admin:crm_generateddocument_edit", args=[doc.pk]),
+            "restore_url": reverse("admin:crm_generateddocument_restore", args=[doc.pk]),
         }
         return TemplateResponse(request, "crm/document_print.html", context)
+
+    def _editable_doc(self, request, pk):
+        if not documents.can_generate(request):
+            raise PermissionDenied
+        return get_object_or_404(self.get_queryset(request), pk=pk)
+
+    def edit_view(self, request, pk):
+        """Salva o texto editado na página de impressão (ex.: valor diferente no recibo)."""
+        doc = self._editable_doc(request, pk)
+        try:
+            documents.edit_text(doc, request.POST.get("text", ""))
+        except documents.DocumentError as exc:
+            return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+        return JsonResponse({"ok": True, "edited_at": doc.edited_at.isoformat()})
+
+    def restore_view(self, request, pk):
+        doc = self._editable_doc(request, pk)
+        if documents.restore_original(doc):
+            messages.success(request, _("Texto original restaurado."))
+        return redirect(reverse("admin:crm_generateddocument_print", args=[doc.pk]))
+
+    @display(description=_("editado"), label={True: "info"})
+    def edited_badge(self, obj):
+        return (True, _("Editado")) if obj.edited_at else "-"
 
     @display(description=_("imprimir"))
     def print_link(self, obj):

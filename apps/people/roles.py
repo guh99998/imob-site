@@ -41,7 +41,8 @@ CRM_DAILY = (
 def _permissions_for(role):
     everything = Permission.objects.filter(content_type__app_label__in=APP_LABELS)
     if role == ADMIN:
-        return everything
+        # Chaves de API são geradas por quem implanta (superusuário), não pelo cliente.
+        return everything.exclude(content_type__app_label="api")
     if role == MANAGER:
         return everything.exclude(content_type__app_label__in=("core", "auth", "api"))
     lookups = _perms(

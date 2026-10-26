@@ -320,6 +320,32 @@ def test_dashboard_and_sidebar_show_followups(admin_client):
     assert "Retornos atrasados" in html and "Retornos hoje" in html
 
 
+def test_dashboard_followups_show_the_responsible_broker(admin_client):
+    broker = Broker.objects.create(name="Marina Souza")
+    crm = Client.objects.create(name="Cliente do dia")
+    FollowUp.objects.create(client=crm, broker=broker, note="Ligar")
+    FollowUp.objects.create(client=crm, note="Sem responsável")
+    html = admin_client.get(reverse("admin:index")).content.decode()
+    assert "Marina Souza ·" in html
+
+
+def test_followups_scope_by_role(client):
+    """Corretor vê só retornos dos próprios clientes; os demais perfis veem todos."""
+    from apps.core.admin_dashboard import crm_followups
+
+    mine = _make_user(roles.BROKER, "corretor")
+    Broker.objects.create(name="Eu", user=mine)
+    own = Client.objects.create(name="Meu", broker=mine.broker)
+    other = Client.objects.create(name="De outro")
+    FollowUp.objects.create(client=own)
+    FollowUp.objects.create(client=other)
+    request = type("R", (), {})()
+    request.user = mine
+    assert crm_followups(request).count() == 1
+    request.user = _make_user(roles.MANAGER, "gerente")
+    assert crm_followups(request).count() == 2
+
+
 def test_dashboard_hides_crm_when_off(admin_client):
     with override_settings(SITE_FEATURES=["searches"]):
         html = admin_client.get(reverse("admin:index")).content.decode()

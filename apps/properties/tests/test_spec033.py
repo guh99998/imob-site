@@ -486,6 +486,7 @@ def test_admin_upload_preview_confirm_and_progress(admin_client):
     assert r.status_code == 302 and r.url == page_url
     html = admin_client.get(page_url).content.decode()
     assert "Prévia" in html and "categoria não encontrada" in html
+    assert "properties/admin/panels.css" in html  # a página não herda o Media do formulário
     assert "Confirmar e importar 1 imóvel" in html
 
     admin_client.post(page_url, {"action": "confirm"})
@@ -556,18 +557,11 @@ def test_only_admin_and_manager_can_import(client, role, allowed):
     )
 
 
-def test_sidebar_item_follows_permission(client):
-    from apps.core.admin_navigation import can_add_importjob
-
-    manager = User.objects.create_user("m", password="pw", is_staff=True)
-    roles.apply_role(manager, roles.MANAGER)
-    broker = User.objects.create_user("b", password="pw", is_staff=True)
-    roles.apply_role(broker, roles.BROKER)
-    request = type("R", (), {})()
-    request.user = manager
-    assert can_add_importjob(request)
-    request.user = User.objects.get(pk=broker.pk)
-    assert not can_add_importjob(request)
+def test_import_is_not_in_the_sidebar(admin_client):
+    """A importação é feita na implantação (comando ou URL): não aparece no menu."""
+    html = admin_client.get(reverse("admin:index")).content.decode()
+    assert "Importar imóveis" not in html
+    assert admin_client.get(reverse("admin:properties_importjob_add")).status_code == 200
 
 
 # ---------- comando ----------

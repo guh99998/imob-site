@@ -21,15 +21,35 @@
     @media print {
       body { background: #fff; }
       .bar { display: none; }
+      #doc-body.is-editing { outline: 0; background: none; }
       .page { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
     }
     @media (max-width: 800px) { .page { width: auto; min-height: 0; margin: 0; padding: 1.25rem; } }
+    .bar { flex-wrap: wrap; }
+    .bar .ghost { background: #3f3f46; color: #fff; }
+    .bar .ok { background: #15803d; }
+    .bar form { display: contents; }
+    .msg { color: #e4e4e7; font: .9rem system-ui, sans-serif; align-self: center; }
+    #doc-body.is-editing { outline: 2px dashed #6d28d9; outline-offset: 6px; background: #faf5ff; }
+    #doc-body[contenteditable=true]:focus { outline-style: solid; }
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="bar">
+  <div class="bar" id="doc-bar" data-edit-url="{{ edit_url }}" data-csrf="{{ csrf_token }}">
     <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+    {% if can_edit %}
+    <button type="button" class="ghost" id="doc-edit" hidden>Editar texto</button>
+    <button type="button" class="ok" id="doc-save" hidden>Salvar alterações</button>
+    <button type="button" class="ghost" id="doc-cancel" hidden>Cancelar</button>
+    {% if doc.original_html %}
+    <form method="post" action="{{ restore_url }}" onsubmit="return confirm('Voltar ao texto original gerado pelo modelo?')">{% csrf_token %}
+      <button type="submit" class="ghost">Restaurar original</button>
+    </form>
+    {% endif %}
+    {% endif %}
     <a href="{{ back }}">Voltar</a>
+    <span class="msg" id="doc-msg" role="status" aria-live="polite">{% if doc.edited_at %}Texto editado em {{ doc.edited_at|date:"d/m/Y H:i" }}.{% endif %}</span>
   </div>
   <main class="page">
     <header>
@@ -40,7 +60,53 @@
         {% if site.phone or site.email %}<br>{{ site.phone }}{% if site.phone and site.email %} · {% endif %}{{ site.email }}{% endif %}
       </div>
     </header>
-    {{ doc.html|safe }}
+    <div id="doc-body">{{ doc.html|safe }}</div>
   </main>
+  {% if can_edit %}
+  <script>
+  (function () {
+    var bar = document.getElementById("doc-bar");
+    var body = document.getElementById("doc-body");
+    var edit = document.getElementById("doc-edit"), save = document.getElementById("doc-save"),
+        cancel = document.getElementById("doc-cancel"), msg = document.getElementById("doc-msg");
+    var original = body.innerHTML;
+    edit.hidden = false;  // sem JavaScript os botões de edição não aparecem
+
+    function setEditing(on) {
+      body.contentEditable = on ? "true" : "false";
+      body.classList.toggle("is-editing", on);
+      edit.hidden = on; save.hidden = !on; cancel.hidden = !on;
+      if (on) { body.focus(); msg.textContent = "Clique no texto para alterar (ex.: o valor). Imprimir já usa o texto editado."; }
+    }
+
+    // Texto simples: título vira "# ...", cada bloco é um parágrafo, <br> vira quebra de linha.
+    function toText() {
+      var blocks = [];
+      Array.prototype.forEach.call(body.children, function (el) {
+        var t = el.innerText.replace(/\u00a0/g, " ").trim();
+        if (!t) return;
+        blocks.push(el.tagName === "H2" ? "# " + t : t);
+      });
+      if (!blocks.length && body.innerText.trim()) blocks.push(body.innerText.trim());
+      return blocks.join("\n\n");
+    }
+
+    edit.addEventListener("click", function () { setEditing(true); });
+    cancel.addEventListener("click", function () { body.innerHTML = original; setEditing(false); msg.textContent = ""; });
+    save.addEventListener("click", function () {
+      var data = new URLSearchParams({ text: toText() });
+      save.disabled = true;
+      fetch(bar.dataset.editUrl, { method: "POST", body: data, credentials: "same-origin",
+        headers: { "X-CSRFToken": bar.dataset.csrf } })
+        .then(function (r) { return r.json().then(function (j) { return [r.ok, j]; }); })
+        .then(function (res) {
+          if (res[0]) { location.reload(); }
+          else { msg.textContent = res[1].error || "Não foi possível salvar."; save.disabled = false; }
+        })
+        .catch(function () { msg.textContent = "Não foi possível salvar."; save.disabled = false; });
+    });
+  })();
+  </script>
+  {% endif %}
 </body>
 </html>

@@ -1,5 +1,5 @@
 // Cadastro de imóvel: avisa de possíveis duplicados enquanto o formulário é preenchido.
-(function () {
+function setupDuplicates() {
   var panel = document.getElementById("duplicates-panel");
   if (!panel) return;
   var form = panel.closest("form") || document.querySelector("form#property_form");
@@ -48,4 +48,11 @@
     var el = field(n);
     if (el) { el.addEventListener("input", schedule); el.addEventListener("change", schedule); }
   });
-})();
+}
+
+// O script vem no <head>: espera o formulário existir.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", setupDuplicates);
+} else {
+  setupDuplicates();
+}

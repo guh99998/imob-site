@@ -354,14 +354,18 @@ def test_admin_can_deactivate_key(admin_client):
     assert not key.is_active and ApiKey.lookup(raw) is None
 
 
-def test_only_administrator_manages_keys():
+def test_only_superuser_manages_keys(admin_client):
+    """As chaves são geradas por quem implanta (superusuário): nenhuma função do cliente."""
     from django.contrib.auth import get_user_model
 
     User = get_user_model()
-    for role, expected in [(roles.ADMIN, True), (roles.MANAGER, False), (roles.BROKER, False)]:
+    for role in (roles.ADMIN, roles.MANAGER, roles.BROKER, roles.CLERK):
         user = User.objects.create_user(role.lower(), password="pw")
         roles.apply_role(user, role)
-        assert user.has_perm("api.view_apikey") is expected, role
+        assert user.has_perm("api.view_apikey") is False, role
+        assert user.has_perm("api.add_apikey") is False, role
+    assert admin_client.get(reverse("admin:api_apikey_changelist")).status_code == 200
+    assert "Chaves de API" not in admin_client.get(reverse("admin:index")).content.decode()
 
 
 def test_admin_hidden_when_module_off(admin_client, settings):

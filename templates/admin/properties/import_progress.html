@@ -1,33 +1,31 @@
 <div id="import-progress"
      {% if job.status == "RUNNING" %}hx-post="{{ step_url }}" hx-trigger="load delay:700ms" hx-swap="outerHTML" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'{% endif %}>
   {% if job.status != "PREVIEW" %}
-  <p class="font-medium mb-2" role="status" aria-live="polite">
+  <p class="pa-title" role="status" aria-live="polite">
     {% if job.status == "RUNNING" %}Importando {{ job.processed }}/{{ job.total }}…{% else %}Importação concluída: {{ job.processed }}/{{ job.total }} linhas.{% endif %}
   </p>
-  <div class="h-3 w-full rounded-full bg-base-200 dark:bg-base-700 overflow-hidden" aria-hidden="true">
-    <div class="h-3 bg-primary-600" style="width: {{ percent }}%"></div>
-  </div>
-  <ul class="mt-3 flex flex-wrap gap-4 text-sm">
+  <div class="pa-bar" aria-hidden="true" style="margin-top: .5rem"><div style="width: {{ percent }}%"></div></div>
+  <ul class="pa-stats" style="margin-top: .75rem">
     <li><strong>{{ job.created_count }}</strong> criados</li>
     <li><strong>{{ job.updated_count }}</strong> atualizados</li>
     <li><strong>{{ job.error_count }}</strong> com erro</li>
   </ul>
   {% if job.status == "RUNNING" %}
-  <form method="post" action="{{ step_url }}" class="mt-3">{% csrf_token %}
-    <button type="submit" class="px-3 py-1.5 rounded-default border border-base-300 text-sm">Continuar importação</button>
-    <span class="text-xs opacity-70">(use se o progresso parar de andar sozinho)</span>
+  <form method="post" action="{{ step_url }}" style="margin-top: .75rem">{% csrf_token %}
+    <button type="submit" class="pa-btn">Continuar importação</button>
+    <span class="pa-muted">(use se o progresso parar de andar sozinho)</span>
   </form>
   {% endif %}
   {% if issues %}
-  <h3 class="mt-4 font-semibold">Avisos e erros</h3>
-  <ul class="mt-2 grid gap-1 text-sm">
+  <h3>Avisos e erros</h3>
+  <ul class="pa-list">
     {% for i in issues %}
-    <li class="{% if i.level == 'error' %}text-red-700{% else %}text-orange-700{% endif %}">
+    <li class="{% if i.level == 'error' %}pa-err{% else %}pa-warning{% endif %}">
       Linha {{ i.row }}{% if i.ref %} ({{ i.ref }}){% endif %}: {{ i.message }}
     </li>
     {% endfor %}
   </ul>
-  {% if more_issues %}<p class="mt-1 text-sm opacity-75">…e mais {{ more_issues }}.</p>{% endif %}
+  {% if more_issues %}<p class="pa-muted">…e mais {{ more_issues }}.</p>{% endif %}
   {% endif %}
   {% endif %}
 </div>
