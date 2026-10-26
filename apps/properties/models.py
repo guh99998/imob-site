@@ -308,6 +308,17 @@ class Property(models.Model):
         verbose_name=_("editado por"),
     )
 
+    external_ref = models.CharField(
+        _("referência externa"),
+        max_length=100,
+        unique=True,
+        null=True,
+        blank=True,
+        editable=False,
+        help_text=_(
+            "Identificador no sistema de origem (API/importação); evita duplicar ao reenviar."
+        ),
+    )
     review_due = models.DateField(
         _("revisar até"),
         null=True,

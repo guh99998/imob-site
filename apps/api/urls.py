@@ -15,6 +15,16 @@ urlpatterns = [
     ),
     path("v1/properties/", views.PropertyListView.as_view(), name="properties"),
     path("v1/properties/<str:code>/", views.PropertyDetailView.as_view(), name="property"),
+    path(
+        "v1/properties/<str:code>/photos/",
+        views.PropertyPhotoCreateView.as_view(),
+        name="property-photos",
+    ),
+    path(
+        "v1/properties/<str:code>/photos/<int:photo_id>/",
+        views.PropertyPhotoDeleteView.as_view(),
+        name="property-photo",
+    ),
     path("schema/", views.ApiSchemaView.as_view(), name="schema"),
     path("docs/", views.ApiDocsView.as_view(url_name="api:schema"), name="docs"),
 ]

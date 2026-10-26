@@ -271,6 +271,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
         "audit_updated",
         "audit_reviewed",
         "favorites_count",
+        "external_ref",
     )
     list_display = (
         "cover_preview",
@@ -392,6 +393,7 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
                             "audit_updated",
                             "audit_reviewed",
                             "favorites_count",
+                            "external_ref",
                         ),
                     },
                 )

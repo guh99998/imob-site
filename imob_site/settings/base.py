@@ -104,9 +104,11 @@ STORAGES = {
 MAX_FEATURED = env.int("MAX_FEATURED", default=3)
 
 # Módulos do painel ligados neste site (env FEATURES="brokers,partners,owners,searches").
-SITE_FEATURES = env.list("FEATURES", default=["brokers", "partners", "owners", "searches", "crm"])
+SITE_FEATURES = env.list(
+    "FEATURES", default=["brokers", "partners", "owners", "searches", "crm", "api"]
+)
 
-# API aberta (módulo opcional `api`, desligado por padrão): chaves criadas no painel.
+# API aberta (módulo `api`, ligado por padrão): só responde com uma chave criada no painel.
 API_THROTTLE_RATE = env("API_THROTTLE_RATE", default="120/min")
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.api.authentication.ApiKeyAuthentication"],
