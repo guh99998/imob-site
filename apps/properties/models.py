@@ -623,3 +623,61 @@ class PropertyChange(models.Model):
 
     def __str__(self):
         return f"{self.property_id} @ {self.created_at:%d/%m/%Y %H:%M}"
+
+
+class ImportJob(models.Model):
+    """Importação em lote de imóveis: enviar -> prévia -> confirmar -> processar em lotes."""
+
+    class Source(models.TextChoices):
+        SHEET = "SHEET", _("Planilha (XLSX/CSV) + ZIP de fotos")
+        XML = "XML", _("XML de portal (VivaReal/ZAP)")
+
+    class Status(models.TextChoices):
+        PREVIEW = "PREVIEW", _("Aguardando confirmação")
+        RUNNING = "RUNNING", _("Importando")
+        DONE = "DONE", _("Concluída")
+
+    source = models.CharField(_("origem"), max_length=5, choices=Source, default=Source.SHEET)
+    file = models.FileField(_("arquivo"), upload_to="imports/%Y/%m/", blank=True)
+    zip_file = models.FileField(
+        _("ZIP de fotos"),
+        upload_to="imports/%Y/%m/",
+        blank=True,
+        help_text=_("Opcional. Uma pasta por referência externa ou os nomes citados na planilha."),
+    )
+    feed_url = models.URLField(
+        _("endereço do XML"),
+        blank=True,
+        help_text=_("Alternativa ao arquivo: URL pública do feed."),
+    )
+    status = models.CharField(_("situação"), max_length=7, choices=Status, default=Status.PREVIEW)
+    rows = models.JSONField(_("linhas"), default=list, editable=False)
+    type_map = models.JSONField(
+        _("tipos do portal"),
+        default=dict,
+        editable=False,
+        help_text=_("Tipo do portal -> categoria."),
+    )
+    total = models.PositiveIntegerField(_("linhas"), default=0)
+    processed = models.PositiveIntegerField(_("processadas"), default=0)
+    created_count = models.PositiveIntegerField(_("criados"), default=0)
+    updated_count = models.PositiveIntegerField(_("atualizados"), default=0)
+    error_count = models.PositiveIntegerField(_("com erro"), default=0)
+    errors = models.JSONField(_("erros"), default=list, editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(_("enviada em"), auto_now_add=True)
+    finished_at = models.DateTimeField(_("concluída em"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("importação de imóveis")
+        verbose_name_plural = _("importações de imóveis")
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"Importação #{self.pk} ({self.created_at:%d/%m/%Y %H:%M})"
+
+    @property
+    def source_label(self):
+        return f"Importação #{self.pk}"

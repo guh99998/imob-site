@@ -18,6 +18,7 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Rodar: `uv run python manage.py tailwind runserver`
 - Migrations: `uv run python manage.py makemigrations && uv run python manage.py migrate`
 - Testes: `uv run pytest`
+- Importar imóveis: `uv run python manage.py import_properties arquivo.xlsx --zip fotos.zip` (ou `.xml`; `--dry-run` só mostra a prévia)
 - Modelos-base de documentos: `uv run python manage.py seed_document_templates`
 - Duplicados (varredura): `uv run python manage.py find_duplicates`
 - Dados de exemplo: `uv run python manage.py seed_demo` (`--reset` recria; fotos em `demo/photos/`)
@@ -45,4 +46,5 @@ Django 6.1 · Python 3.13 · uv · PostgreSQL (prod) / SQLite (dev) · Templates
 - Menu do Unfold: link callable não marca "ativo"; use `"active": "apps.core.admin_navigation.<x>"` com `path_active(...)`. Faixa de demonstração do site: `DEMO_MODE` no `.env`. Categorias e demais cadastros em ordem alfabética (`Meta.ordering`); sem campo de ordem manual (só fotos têm).
 - Duplicado no cadastro (spec 030): `PropertyAdminForm.clean()` bloqueia cadastro novo parecido até `not_duplicate` vir (ids do JS ou caixa "on" sem JS); a checagem ao vivo é `PropertyAdmin.check_duplicates` + `static/properties/admin/duplicates.js`; corretor com escopo nunca vê dados dos outros imóveis nem bloqueia.
 - Histórico do imóvel (spec 031): toda mudança passa por `apps/properties/history.py` (`record_changes(prop, before, after, user, source)`; API/importação usam `source="API: <chave>"`). Mudança em massa de imóvel usa `PropertyAdmin._apply` (passa pelo `save()`, não `queryset.update`). Prazo de revisão em `apps/properties/reviews.py`; `Property.save()` agenda ao publicar, `mark_reviewed` ao revisar.
+- Importação (spec 033): `apps/properties/importers.py` lê planilha/CSV/XML VRSync para linhas padronizadas, `importing.py` cria o `ImportJob`, mostra a prévia e processa em lotes (20 linhas ou 20 s; `process_batch`), `admin_import.py` é a tela. Toda gravação passa por `services.upsert_property`/`add_photo`; XML só via `defusedxml`; URLs só por `services.fetch_bytes` (IP público). Reimportar atualiza por `external_ref` e não readiciona fotos.
 - Não commitar `.env`, `db.sqlite3`, `media/`.

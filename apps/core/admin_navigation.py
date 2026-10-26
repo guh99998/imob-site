@@ -15,6 +15,7 @@ def _perm(codename):
 can_view_property = _perm("properties.view_property")
 can_add_property = _perm("properties.add_property")
 can_view_category = _perm("properties.view_category")
+can_add_importjob = _perm("properties.add_importjob")
 can_view_feature = _perm("properties.view_feature")
 can_view_city = _perm("properties.view_city")
 can_view_neighborhood = _perm("properties.view_neighborhood")
@@ -108,6 +109,10 @@ def pending_reviews_badge(request):
 
 def pending_reviews_link(request):
     return reverse("admin:properties_property_changelist") + "?review=overdue"
+
+
+def import_active(request):
+    return request.path.startswith(reverse("admin:properties_importjob_changelist"))
 
 
 def pending_reviews_active(request):

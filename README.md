@@ -12,6 +12,7 @@ Site de imobiliária (venda e aluguel) com painel de gestão. Django 6.1, Python
 - **Documentos:** termo de visita, proposta, contratos e recibo gerados a partir de modelos editáveis no painel (com valor por extenso), em página A4 para imprimir ou salvar em PDF, com histórico de quem gerou o quê. Modelos-base de exemplo: `manage.py seed_document_templates`.
 - **Duplicados:** no cadastro novo o painel avisa **antes de salvar** (cards com "Quero atualizar esse imóvel" / "Não é duplicado"; sem JS vira erro com caixa de confirmação) e, ao salvar, avisa se ele repete outro (mesmo CEP, número e complemento, ou características parecidas); coluna e filtro na lista, ação "Marcar como não duplicado" e comando `find_duplicates` para varrer o estoque.
 - **Histórico e revisão do imóvel:** cada alteração (painel, ações em lote) fica registrada campo a campo (quem, quando, de → para) no fim do formulário; imóveis publicados têm prazo de revisão (padrão 60 dias, ajustável em Dados da imobiliária; 0 desliga) com "Revisões pendentes" na sidebar, no painel e filtro/coluna na lista.
+- **Importação em lote:** Imóveis → Importar imóveis (Administrador/Gerente). Planilha XLSX/CSV (modelo para baixar) + ZIP de fotos, ou XML VivaReal/ZAP (arquivo ou URL), com prévia antes de confirmar e progresso em lotes sem worker. Reenviar a mesma `ref_externa` atualiza em vez de duplicar. Cargas grandes: `manage.py import_properties arquivo.xlsx --zip fotos.zip`.
 - **Painel (`/admin/`):** imóveis com código automático por categoria, fotos em lote (arrastar e soltar), comodidades em checkboxes, placeholders, máscaras, pesquisa avançada, leads e procuras (lista com resumo, WhatsApp clicável e imóveis compatíveis), tudo em ordem alfabética e em pt-BR (`locale/pt_BR`, com os textos do Unfold), corretores/parceiros/proprietários com funções e auditoria.
 - **Módulos opcionais por site:** variável `FEATURES` (`brokers`, `partners`, `owners`, `searches`, `crm`, `api`; todos vêm ligados).
 
@@ -101,7 +102,8 @@ Plano em `plans/plano-016-022-novas-funcoes.md`:
 - [x] 030 — Duplicado avisado no cadastro (checagem ao vivo e confirmação)
 - [x] 031 — Histórico do imóvel e data de revisão
 - [x] 032 — API de escrita de imóveis (`external_ref`, fotos por upload/URL)
+- [x] 033 — Importação em lote (planilha + ZIP, XML VivaReal/ZAP, comando)
 
-Plano em `plans/2026-10-26-correcoes-admin.md` (próximo: 033 importação em lote).
+Plano em `plans/2026-10-26-correcoes-admin.md` (concluído; ideias novas viram specs novos).
 
 Plano em `plans/plano-023-027-ajustes-kanban-contratos.md` (024 histórico, 025 Kanban, 026 partes do contrato).

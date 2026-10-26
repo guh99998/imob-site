@@ -222,6 +222,13 @@ UNFOLD = {
                         "permission": "apps.core.admin_navigation.can_add_property",
                     },
                     {
+                        "title": _("Importar imóveis"),
+                        "icon": "upload_file",
+                        "link": reverse_lazy("admin:properties_importjob_add"),
+                        "active": "apps.core.admin_navigation.import_active",
+                        "permission": "apps.core.admin_navigation.can_add_importjob",
+                    },
+                    {
                         "title": _("Categorias"),
                         "icon": "category",
                         "link": reverse_lazy("admin:properties_category_changelist"),

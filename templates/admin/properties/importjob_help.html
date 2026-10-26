@@ -1,0 +1,10 @@
+<div class="mb-6 rounded-default border border-base-200 dark:border-base-700 p-4 text-sm">
+  <p class="font-semibold mb-2">Como importar o estoque</p>
+  <ol class="list-decimal pl-5 grid gap-1">
+    <li><strong>Planilha + ZIP:</strong> <a class="underline" href="{% url 'admin:properties_importjob_template' %}">baixe o modelo (XLSX)</a>, preencha uma linha por imóvel e envie junto com um ZIP de fotos (uma pasta por <code>ref_externa</code>, ou os nomes citados na coluna <code>fotos</code>).</li>
+    <li><strong>XML de portal (VivaReal/ZAP):</strong> envie o arquivo ou o endereço do feed; as fotos são baixadas das URLs. Os tipos do portal são ligados às suas categorias na etapa seguinte.</li>
+    <li>Você vê uma <strong>prévia</strong> (novos, atualizados e linhas com erro) antes de confirmar.</li>
+    <li>Reenviar a mesma <code>ref_externa</code> <strong>atualiza</strong> o imóvel; as fotos só entram quando ele ainda não tem nenhuma.</li>
+  </ol>
+  <p class="mt-2 opacity-75">Cargas muito grandes: <code>python manage.py import_properties arquivo.xlsx --zip fotos.zip</code>.</p>
+</div>

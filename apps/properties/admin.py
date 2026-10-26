@@ -734,3 +734,6 @@ class PropertyAdmin(AdvancedSearchMixin, ScopedByRoleMixin, MaskedAdminMixin, Mo
             )
             return
         self._apply(request, queryset, lambda p: setattr(p, "is_featured", True))
+
+
+from . import admin_import  # noqa: E402,F401 - registra o ImportJobAdmin

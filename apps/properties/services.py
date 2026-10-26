@@ -145,18 +145,18 @@ def upsert_property(data, *, instance=None, source="API"):
 # ---------- fotos ----------
 
 
-def _check_public_host(url):
+def _check_public_host(url, field="url"):
     parts = urlparse(url)
     if parts.scheme not in ("http", "https") or not parts.hostname:
-        raise ValidationError({"url": "Use um endereço http:// ou https://."})
+        raise ValidationError({field: "Use um endereço http:// ou https://."})
     port = parts.port or (443 if parts.scheme == "https" else 80)
     try:
         infos = socket.getaddrinfo(parts.hostname, port)
     except OSError as exc:
-        raise ValidationError({"url": "Não foi possível resolver o endereço."}) from exc
+        raise ValidationError({field: "Não foi possível resolver o endereço."}) from exc
     for info in infos:
         if not ipaddress.ip_address(info[4][0]).is_global:
-            raise ValidationError({"url": "Endereço não permitido."})
+            raise ValidationError({field: "Endereço não permitido."})
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -164,30 +164,35 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def fetch_image_bytes(url):
-    """Baixa a imagem (http/https, IP público, até 3 redirecionamentos, 10 MB, 10 s)."""
+def fetch_bytes(url, max_bytes=MAX_PHOTO_BYTES, field="url", timeout=FETCH_TIMEOUT):
+    """Baixa um arquivo (http/https, IP público, 3 redirecionamentos, limite de bytes e tempo)."""
+    too_big = {field: f"Arquivo maior que {max_bytes // (1024 * 1024)} MB."}
     opener = urllib.request.build_opener(_NoRedirect)
     for _hop in range(MAX_REDIRECTS + 1):
-        _check_public_host(url)
+        _check_public_host(url, field)
         request = urllib.request.Request(url, headers={"User-Agent": "imob-site/1.0"})
         try:
-            response = opener.open(request, timeout=FETCH_TIMEOUT)
+            response = opener.open(request, timeout=timeout)
         except urllib.error.HTTPError as exc:
             location = exc.headers.get("Location") if exc.headers else None
             if exc.code in (301, 302, 303, 307, 308) and location:
                 url = urljoin(url, location)
                 continue
-            raise ValidationError({"url": f"O servidor da imagem respondeu {exc.code}."}) from exc
+            raise ValidationError({field: f"O servidor respondeu {exc.code}."}) from exc
         except (urllib.error.URLError, OSError) as exc:
-            raise ValidationError({"url": "Não foi possível baixar a imagem."}) from exc
+            raise ValidationError({field: "Não foi possível baixar o arquivo."}) from exc
         with response:
-            if int(response.headers.get("Content-Length") or 0) > MAX_PHOTO_BYTES:
-                raise ValidationError({"url": "Imagem maior que 10 MB."})
-            data = response.read(MAX_PHOTO_BYTES + 1)
-        if len(data) > MAX_PHOTO_BYTES:
-            raise ValidationError({"url": "Imagem maior que 10 MB."})
+            if int(response.headers.get("Content-Length") or 0) > max_bytes:
+                raise ValidationError(too_big)
+            data = response.read(max_bytes + 1)
+        if len(data) > max_bytes:
+            raise ValidationError(too_big)
         return data
-    raise ValidationError({"url": "Redirecionamentos demais."})
+    raise ValidationError({field: "Redirecionamentos demais."})
+
+
+def fetch_image_bytes(url):
+    return fetch_bytes(url, MAX_PHOTO_BYTES, "url")
 
 
 def _validated_image(data, field):
@@ -204,8 +209,11 @@ def _validated_image(data, field):
     return ContentFile(data, name=f"api-photo.{IMAGE_FORMATS[fmt]}")
 
 
-def add_photo(prop, *, upload=None, url=None, caption="", source="API"):
-    """Adiciona uma foto (arquivo enviado ou URL) ao fim da lista; a primeira vira capa."""
+def add_photo(prop, *, upload=None, url=None, caption="", source="API", record=True):
+    """Adiciona uma foto (arquivo enviado ou URL) ao fim da lista; a primeira vira capa.
+
+    `record=False` pula o histórico (quem importa várias fotos grava uma linha só).
+    """
     if bool(upload) == bool(url):
         raise ValidationError({"photo": "Envie um arquivo (`file`) ou uma `url`, não os dois."})
     if upload is not None:
@@ -221,7 +229,8 @@ def add_photo(prop, *, upload=None, url=None, caption="", source="API"):
         order=0 if last is None else last + 1,
         is_cover=not prop.photos.filter(is_cover=True).exists(),
     )
-    history.record_changes(prop, before, history.snapshot(prop), None, source)
+    if record:
+        history.record_changes(prop, before, history.snapshot(prop), None, source)
     return photo
 
 
